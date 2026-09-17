@@ -1,0 +1,5 @@
+numpy
+matplotlib
+requests
+rasterio
+scikit-optimize
