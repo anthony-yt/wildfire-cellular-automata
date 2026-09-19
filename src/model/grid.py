@@ -5,6 +5,7 @@ SANA = 0
 QUEMANDOSE = 1
 QUEMADA = 2
 NO_COMBUSTIBLE = 3
+AGUA = 4
 
 # Vecindad de Moore
 VECINOS = [
@@ -34,6 +35,14 @@ class Grid:
     def encender_celda(self, fila, columna):
         self.estado[fila, columna] = QUEMANDOSE
         self._contador_quema[fila, columna] = 0
+
+    def agregar_obstaculo(self, fila, columna):
+        """Asigna una celda como no combustible (rocas / caminos)."""
+        self.estado[fila, columna] = NO_COMBUSTIBLE
+
+    def agregar_rio(self, fila, columna):
+        """Asigna una celda como agua (río / cuerpos de agua)."""
+        self.estado[fila, columna] = AGUA
 
     def _vecinas_quemandose(self):
         # Para cada una de las 8 direcciones, desplazamos el grid y vemos
@@ -72,4 +81,5 @@ class Grid:
             "Quemandose": int(np.sum(self.estado == QUEMANDOSE)),
             "Quemada": int(np.sum(self.estado == QUEMADA)),
             "No_combustible": int(np.sum(self.estado == NO_COMBUSTIBLE)),
+            "Agua": int(np.sum(self.estado == AGUA)),
         }

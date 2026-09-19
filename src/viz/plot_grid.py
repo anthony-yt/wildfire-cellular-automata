@@ -5,7 +5,8 @@ Convención de estados del modelo:
     0 = Sana (vegetación viva / combustible disponible)
     1 = Quemandose (frente de fuego activo)
     2 = Quemada (biomasa consumida / material inerte)
-    3 = No-combustible (barreras naturales: rocas, cuerpos de agua, caminos)
+    3 = No-combustible (barreras minerales: rocas, caminos)
+    4 = Agua (cuerpos de agua: ríos, lagos)
 
 Uso rápido:
     from src.viz.plot_grid import dibujar_grid, animar_grid, generar_grid_dummy
@@ -33,13 +34,15 @@ ESTADOS = {
     1: "Quemandose",
     2: "Quemada",
     3: "No-combustible",
+    4: "Agua",
 }
 
 COLORES_ESTADO = {
     0: "#2ecc71",  # verde
     1: "#e74c3c",  # rojo
     2: "#111111",  # casi negro
-    3: "#95a5a6",  # gris
+    3: "#95a5a6",  # gris (rocas)
+    4: "#3498db",  # azul (río/agua)
 }
 
 # BoundaryNorm con límites en semienteros [-0.5, 0.5, 1.5, 2.5, 3.5] para forzar
@@ -109,7 +112,7 @@ def dibujar_grid(
             handles=_leyenda(),
             loc="upper center",
             bbox_to_anchor=(0.5, -0.03),
-            ncol=4,
+            ncol=5,
             frameon=False,
         )
 
@@ -145,7 +148,7 @@ def animar_grid(
             handles=_leyenda(),
             loc="upper center",
             bbox_to_anchor=(0.5, -0.03),
-            ncol=4,
+            ncol=5,
             frameon=False,
         )
     fig.tight_layout()
@@ -166,7 +169,8 @@ def generar_grid_dummy(
     n_puntos_ignicion: int = 1,
     fraccion_no_combustible: float = 0.08,
     duracion_quema: int = 2,
-    semilla: int = 42,
+    prob_propagacion: float = 0.58,
+    semilla: int = 42,  # Cambiar valor para ejecutar otra simulación
 ) -> list[np.ndarray]:
     """
     Generador sintético simplificado para validar la visualización y exportación.
@@ -176,19 +180,33 @@ def generar_grid_dummy(
         En etapas posteriores este módulo consume directamente los estados producidos por src.model.grid,
         el cual incorpora vecindad de Moore (8 vecinos), pendiente y factores de vegetación.
     """
+    # Cambiar valor para ejecutar otra simulación
     rng = np.random.default_rng(semilla)
 
     grid = np.zeros((tamano, tamano), dtype=int)
 
+    centro_c = int(tamano * 0.55)
+    for r in range(tamano):
+        c = int(centro_c + 2.0 * np.sin(r / 3.5))
+        if 0 <= c < tamano:
+            grid[r, c] = 4
+        if 0 <= c + 1 < tamano:
+            grid[r, c + 1] = 4
+
     n_no_comb = int(tamano * tamano * fraccion_no_combustible)
-    idx_planos = rng.choice(tamano * tamano, size=n_no_comb, replace=False)
-    grid.ravel()[idx_planos] = 3
+    candidatas_rocas = np.argwhere(grid == 0)
+    idx_rocas = rng.choice(len(candidatas_rocas), size=n_no_comb, replace=False)
+    for idx in idx_rocas:
+        r, c = candidatas_rocas[idx]
+        grid[r, c] = 3
 
     temporizador = np.zeros((tamano, tamano), dtype=int)
-    candidatas = np.argwhere(grid == 0)
-    elegidas = rng.choice(len(candidatas), size=n_puntos_ignicion, replace=False)
+    candidatas_fuego = np.argwhere(grid[:, :max(1, centro_c - 2)] == 0)
+    if len(candidatas_fuego) == 0:
+        candidatas_fuego = np.argwhere(grid == 0)
+    elegidas = rng.choice(len(candidatas_fuego), size=min(n_puntos_ignicion, len(candidatas_fuego)), replace=False)
     for idx in elegidas:
-        r, c = candidatas[idx]
+        r, c = candidatas_fuego[idx]
         grid[r, c] = 1
         temporizador[r, c] = duracion_quema
 
@@ -206,7 +224,7 @@ def generar_grid_dummy(
                 for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                     nr, nc = r + dr, c + dc
                     if 0 <= nr < tamano and 0 <= nc < tamano and grid[nr, nc] == 0:
-                        if rng.random() < 0.35:
+                        if rng.random() < prob_propagacion:
                             nuevo_grid[nr, nc] = 1
                             temporizador[nr, nc] = duracion_quema
 
