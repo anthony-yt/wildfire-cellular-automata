@@ -10,6 +10,7 @@ __pycache__/
 
 .env
 *.env
+!.env.example
 *api_key*
 
 data/raw/*
