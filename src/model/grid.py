@@ -53,6 +53,16 @@ class Grid:
 
         for df, dc in VECINOS:
             vecina = np.roll(quemandose, shift=(df, dc), axis=(0, 1))
+            # np.roll envuelve los bordes (toroide). Anulamos las filas/columnas
+            # que se "envolvieron" para que el fuego no traspase los límites del mapa.
+            if df == 1:
+                vecina[0, :] = False
+            elif df == -1:
+                vecina[-1, :] = False
+            if dc == 1:
+                vecina[:, 0] = False
+            elif dc == -1:
+                vecina[:, -1] = False
             hay_vecina_en_llamas |= vecina
 
         return hay_vecina_en_llamas

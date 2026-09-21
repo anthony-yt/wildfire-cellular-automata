@@ -1,20 +1,21 @@
 """
 Capa de visualización y animación para el autómata celular de propagación de incendios.
 
-Convención de estados del modelo:
-    0 = Sana (vegetación viva / combustible disponible)
-    1 = Quemandose (frente de fuego activo)
-    2 = Quemada (biomasa consumida / material inerte)
-    3 = No-combustible (barreras minerales: rocas, caminos)
-    4 = Agua (cuerpos de agua: ríos, lagos)
+Este módulo es una capa de presentación pura: recibe objetos ``Grid`` ya
+calculados por ``src.model.grid`` y los representa visualmente.  No contiene
+reglas de propagación del fuego.
+
+Ejecución:
+    python -m src.viz.plot_grid
 
 Uso rápido:
-    from src.viz.plot_grid import dibujar_grid, animar_grid, generar_grid_dummy
+    from src.model.grid import Grid
+    from src.viz.plot_grid import dibujar_grid, animar_grid
     import matplotlib.pyplot as plt
 
-    grids = generar_grid_dummy(n_pasos=20, tamano=30)
-    dibujar_grid(grids[-1], titulo="Estado final")
-    anim = animar_grid(grids, intervalo=200)
+    grid = Grid(tamano=30, semilla=42)
+    grid.encender_celda(15, 15)
+    dibujar_grid(grid, titulo="Estado inicial")
     plt.show()
 """
 
@@ -28,43 +29,45 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.colors import ListedColormap, BoundaryNorm
 from matplotlib.patches import Patch
 
-# Contrato de estados discretos compartido con el modelo de simulación (src.model.grid)
+from src.model.grid import Grid, SANA, QUEMANDOSE, QUEMADA, NO_COMBUSTIBLE, AGUA
+
+# Contrato de estados discretos compartido con src.model.grid
 ESTADOS = {
-    0: "Sana",
-    1: "Quemandose",
-    2: "Quemada",
-    3: "No-combustible",
-    4: "Agua",
+    SANA: "Sana",
+    QUEMANDOSE: "Quemándose",
+    QUEMADA: "Quemada",
+    NO_COMBUSTIBLE: "No-combustible",
+    AGUA: "Agua",
 }
 
 COLORES_ESTADO = {
-    0: "#2ecc71",  # verde
-    1: "#e74c3c",  # rojo
-    2: "#111111",  # casi negro
-    3: "#95a5a6",  # gris (rocas)
-    4: "#3498db",  # azul (río/agua)
+    SANA: "#2ecc71",           # verde
+    QUEMANDOSE: "#e74c3c",     # rojo
+    QUEMADA: "#111111",        # casi negro
+    NO_COMBUSTIBLE: "#95a5a6", # gris (rocas)
+    AGUA: "#3498db",           # azul (río/agua)
 }
 
-# BoundaryNorm con límites en semienteros [-0.5, 0.5, 1.5, 2.5, 3.5] para forzar
+# BoundaryNorm con límites en semienteros [-0.5, 0.5, 1.5, …] para forzar
 # intervalos discretos exactos por cada entero y evitar interpolaciones de color.
 _CMAP = ListedColormap([COLORES_ESTADO[i] for i in range(len(COLORES_ESTADO))])
 _LIMITES = np.arange(-0.5, len(COLORES_ESTADO) + 0.5, 1)
 _NORMA = BoundaryNorm(_LIMITES, _CMAP.N)
 
 
-def _validar_grid(grid: np.ndarray) -> np.ndarray:
+def _validar_estado(grid) -> np.ndarray:
     """Verifica la dimensionalidad y consistencia de los estados discretos antes de renderizar."""
-    grid = np.asarray(grid)
-    if grid.ndim != 2:
-        raise ValueError(f"el grid tiene que ser 2D, llego shape={grid.shape}")
+    estado = grid.estado if hasattr(grid, 'estado') else np.asarray(grid)
+    if estado.ndim != 2:
+        raise ValueError(f"el grid tiene que ser 2D, llegó shape={estado.shape}")
     estados_validos = set(ESTADOS.keys())
-    estados_presentes = set(np.unique(grid).tolist())
+    estados_presentes = set(np.unique(estado).tolist())
     if not estados_presentes.issubset(estados_validos):
         raise ValueError(
             f"hay estados raros en el grid: {estados_presentes - estados_validos}. "
             f"solo se aceptan: {estados_validos}"
         )
-    return grid
+    return estado
 
 
 def _leyenda() -> list[Patch]:
@@ -75,18 +78,18 @@ def _leyenda() -> list[Patch]:
 
 
 def dibujar_grid(
-    grid: np.ndarray,
+    grid: Grid,
     ax: Optional[plt.Axes] = None,
     titulo: Optional[str] = None,
     mostrar_leyenda: bool = True,
     mostrar_lineas: bool = False,
 ):
     """
-    Renderiza una matriz 2D de estados usando la paleta discreta del proyecto.
+    Renderiza un ``Grid`` usando la paleta discreta del proyecto.
 
     Retorna (fig, ax, im) para permitir composición en subplots o manipulación posterior.
     """
-    grid = _validar_grid(grid)
+    estado = _validar_estado(grid)
 
     if ax is None:
         fig, ax = plt.subplots(figsize=(6, 6))
@@ -94,12 +97,12 @@ def dibujar_grid(
         fig = ax.figure
 
     # nearest preserva celdas nítidas sin difuminar bordes de estados
-    im = ax.imshow(grid, cmap=_CMAP, norm=_NORMA, interpolation="nearest")
+    im = ax.imshow(estado, cmap=_CMAP, norm=_NORMA, interpolation="nearest")
 
     if mostrar_lineas:
         # El desfase de -0.5 alinea las líneas con las fronteras de las celdas y no con sus centros
-        ax.set_xticks(np.arange(-0.5, grid.shape[1], 1), minor=True)
-        ax.set_yticks(np.arange(-0.5, grid.shape[0], 1), minor=True)
+        ax.set_xticks(np.arange(-0.5, estado.shape[1], 1), minor=True)
+        ax.set_yticks(np.arange(-0.5, estado.shape[0], 1), minor=True)
         ax.grid(which="minor", color="white", linewidth=0.5)
 
     ax.set_xticks([])
@@ -120,25 +123,28 @@ def dibujar_grid(
 
 
 def animar_grid(
-    grids: Sequence[np.ndarray],
-    intervalo: int = 300,
+    grids: Sequence[Grid],
+    intervalo: int = 500,
     titulo_fn: Optional[Callable[[int], str]] = None,
     mostrar_leyenda: bool = True,
     figsize=(6, 6.5),
 ) -> FuncAnimation:
     """
-    Construye una animación de matplotlib a partir de una secuencia temporal de matrices 2D.
+    Construye una animación a partir de una secuencia temporal de ``Grid``.
+
+    Cada elemento representa un instante discreto del autómata;
+    la función no ejecuta pasos de simulación, solo reproduce los resultados.
     """
     if len(grids) == 0:
-        raise ValueError("la secuencia de grids esta vacia")
+        raise ValueError("la secuencia de grids está vacía")
 
-    grids = [_validar_grid(g) for g in grids]
+    estados = [_validar_estado(g) for g in grids]
 
     if titulo_fn is None:
         titulo_fn = lambda i: f"Paso {i}"
 
     fig, ax = plt.subplots(figsize=figsize)
-    im = ax.imshow(grids[0], cmap=_CMAP, norm=_NORMA, interpolation="nearest")
+    im = ax.imshow(estados[0], cmap=_CMAP, norm=_NORMA, interpolation="nearest")
     ax.set_xticks([])
     ax.set_yticks([])
     obj_titulo = ax.set_title(titulo_fn(0))
@@ -154,87 +160,74 @@ def animar_grid(
     fig.tight_layout()
 
     def _actualizar(i):
-        im.set_data(grids[i])
+        im.set_data(estados[i])
         obj_titulo.set_text(titulo_fn(i))
         return im, obj_titulo
 
     # blit=False necesario para permitir el redibujado correcto del título en cada frame
-    anim = FuncAnimation(fig, _actualizar, frames=len(grids), interval=intervalo, blit=False)
+    anim = FuncAnimation(fig, _actualizar, frames=len(estados), interval=intervalo, blit=False)
     return anim
 
 
-def generar_grid_dummy(
+def generar_secuencia_grid(
     n_pasos: int = 20,
     tamano: int = 30,
-    n_puntos_ignicion: int = 1,
+    prob_ignicion_base: float = 0.6,
+    pasos_para_quemarse: int = 2,
     fraccion_no_combustible: float = 0.08,
-    duracion_quema: int = 2,
-    prob_propagacion: float = 0.58,
-    semilla: int = 42,  # Cambiar valor para ejecutar otra simulación
+    semilla: int = 123,
 ) -> list[np.ndarray]:
     """
-    Generador sintético simplificado para validar la visualización y exportación.
+    Genera una secuencia de estados usando la clase ``Grid`` del modelo.
 
-    Nota de diseño:
-        Implementa un autómata elemental con vecindad de Von Neumann (4 vecinos) y probabilidad fija.
-        En etapas posteriores este módulo consume directamente los estados producidos por src.model.grid,
-        el cual incorpora vecindad de Moore (8 vecinos), pendiente y factores de vegetación.
+    Crea un escenario sintético con un río vertical sinuoso, obstáculos
+    aleatorios y un punto de ignición, y avanza ``n_pasos`` de simulación.
+    Retorna la lista de arrays 2D que puede alimentar ``animar_grid``.
     """
-    # Cambiar valor para ejecutar otra simulación
+    grid = Grid(
+        tamano=tamano,
+        prob_ignicion_base=prob_ignicion_base,
+        pasos_para_quemarse=pasos_para_quemarse,
+        semilla=semilla,
+    )
+
     rng = np.random.default_rng(semilla)
 
-    grid = np.zeros((tamano, tamano), dtype=int)
-
+    # Río sinuoso de 2 celdas de ancho
     centro_c = int(tamano * 0.55)
     for r in range(tamano):
         c = int(centro_c + 2.0 * np.sin(r / 3.5))
         if 0 <= c < tamano:
-            grid[r, c] = 4
+            grid.agregar_rio(r, c)
         if 0 <= c + 1 < tamano:
-            grid[r, c + 1] = 4
+            grid.agregar_rio(r, c + 1)
 
+    # Obstáculos aleatorios (rocas)
     n_no_comb = int(tamano * tamano * fraccion_no_combustible)
-    candidatas_rocas = np.argwhere(grid == 0)
-    idx_rocas = rng.choice(len(candidatas_rocas), size=n_no_comb, replace=False)
-    for idx in idx_rocas:
-        r, c = candidatas_rocas[idx]
-        grid[r, c] = 3
+    candidatas = np.argwhere(grid.estado == SANA)
+    idx = rng.choice(len(candidatas), size=min(n_no_comb, len(candidatas)), replace=False)
+    for i in idx:
+        r, c = candidatas[i]
+        grid.agregar_obstaculo(r, c)
 
-    temporizador = np.zeros((tamano, tamano), dtype=int)
-    candidatas_fuego = np.argwhere(grid[:, :max(1, centro_c - 2)] == 0)
+    # Generación de fuego al oeste del río para evidenciar el agua como barrera natural
+    candidatas_fuego = np.argwhere(grid.estado[:, :max(1, centro_c - 2)] == SANA)
     if len(candidatas_fuego) == 0:
-        candidatas_fuego = np.argwhere(grid == 0)
-    elegidas = rng.choice(len(candidatas_fuego), size=min(n_puntos_ignicion, len(candidatas_fuego)), replace=False)
-    for idx in elegidas:
-        r, c = candidatas_fuego[idx]
-        grid[r, c] = 1
-        temporizador[r, c] = duracion_quema
+        candidatas_fuego = np.argwhere(grid.estado == SANA)
+    elegida = rng.choice(len(candidatas_fuego))
+    r, c = candidatas_fuego[elegida]
+    grid.encender_celda(r, c)
 
-    secuencia = [grid.copy()]
-
+    # .copy() necesario debido a que Grid muta in-place
+    secuencia = [grid.estado.copy()]
     for _ in range(n_pasos - 1):
-        nuevo_grid = grid.copy()
-        celdas_quemandose = np.argwhere(grid == 1)
-
-        for r, c in celdas_quemandose:
-            temporizador[r, c] -= 1
-            if temporizador[r, c] <= 0:
-                nuevo_grid[r, c] = 2
-            else:
-                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                    nr, nc = r + dr, c + dc
-                    if 0 <= nr < tamano and 0 <= nc < tamano and grid[nr, nc] == 0:
-                        if rng.random() < prob_propagacion:
-                            nuevo_grid[nr, nc] = 1
-                            temporizador[nr, nc] = duracion_quema
-
-        grid = nuevo_grid
-        secuencia.append(grid.copy())
+        grid.paso_tiempo()
+        secuencia.append(grid.estado.copy())
 
     return secuencia
 
 
 if __name__ == "__main__":
-    grids = generar_grid_dummy(n_pasos=25, tamano=30)
-    anim = animar_grid(grids, intervalo=200)
+    grids = generar_secuencia_grid(n_pasos=25, tamano=30)
+    anim = animar_grid(grids, intervalo=500)
     plt.show()
