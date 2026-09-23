@@ -1,0 +1,27 @@
+{
+  "source": "OpenWeatherMap_Current_2.5",
+  "timestamp": "2026-09-18T22:26:43+00:00",
+  "location_name": "Puerto Maldonado",
+  "country": "PE",
+  "latitude": -12.5933,
+  "longitude": -69.1891,
+  "wind": {
+    "speed_ms": 1.54,
+    "speed_kmh": 5.54,
+    "deg": 320.0,
+    "cardinal": "NW",
+    "gust_ms": null,
+    "propagation_vector": {
+      "travel_deg": 140.0,
+      "u_east_ms": 0.99,
+      "v_north_ms": -1.18
+    }
+  },
+  "atmosphere": {
+    "temp_c": 27.1,
+    "feels_like_c": 28.94,
+    "humidity_pct": 69,
+    "pressure_hpa": 1012
+  },
+  "condition": "muy nuboso"
+}

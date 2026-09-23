@@ -1,0 +1,128 @@
+{
+  "Ucayali": {
+    "puntaje_total": 8.67,
+    "c1_firms": {
+      "total_focos": 1133,
+      "conf_altas": 68,
+      "pct_alta_calidad": 81.5,
+      "frp_max": 202.55,
+      "frp_mean": 14.46,
+      "clustering_index": 0.638,
+      "score_c1": 8.36
+    },
+    "c2_viento": {
+      "total_horas": 120,
+      "disponibilidad_pct": 100.0,
+      "vel_media_ms": 1.25,
+      "vel_max_ms": 3.11,
+      "gust_max_ms": 6.31,
+      "consistencia_direccional_r": 0.256,
+      "score_c2": 7.38
+    },
+    "c3_vegetacion": {
+      "combustible_flamable_pct": 94.2,
+      "indice_continuidad": 0.95,
+      "score_c3": 9.5,
+      "detalles": "Excelente continuidad de combustible arbóreo y matorral. Mosaico S09W075 validado en Colab."
+    },
+    "c4_dem": {
+      "elevacion_min_max_m": [
+        142.0,
+        208.0
+      ],
+      "pendiente_media_deg": 5.8,
+      "pendiente_std_deg": 3.6,
+      "score_c4": 9.2,
+      "detalles": "Relieve suave-ondulado con pendientes moderadas (3°-12°). Ideal para autómata híbrido celular."
+    },
+    "c5_grilla_ca": {
+      "aspect_ratio": "1:1 (cuadrática óptima)",
+      "score_c5": 9.4,
+      "detalles": "Frentes de ignición que caben en una grilla de 50x50 con celdas de 50m a 80m."
+    }
+  },
+  "Madre de Dios": {
+    "puntaje_total": 8.33,
+    "c1_firms": {
+      "total_focos": 671,
+      "conf_altas": 15,
+      "pct_alta_calidad": 79.8,
+      "frp_max": 133.78,
+      "frp_mean": 14.91,
+      "clustering_index": 0.655,
+      "score_c1": 8.36
+    },
+    "c2_viento": {
+      "total_horas": 120,
+      "disponibilidad_pct": 100.0,
+      "vel_media_ms": 1.55,
+      "vel_max_ms": 2.94,
+      "gust_max_ms": 7.81,
+      "consistencia_direccional_r": 0.603,
+      "score_c2": 8.54
+    },
+    "c3_vegetacion": {
+      "combustible_flamable_pct": 91.5,
+      "indice_continuidad": 0.92,
+      "score_c3": 8.8,
+      "detalles": "Bosque tropical denso y pasturas. Alta inflamabilidad pero mayor fragmentación por minería/ríos."
+    },
+    "c4_dem": {
+      "elevacion_min_max_m": [
+        185.0,
+        240.0
+      ],
+      "pendiente_media_deg": 1.8,
+      "pendiente_std_deg": 1.2,
+      "score_c4": 7.2,
+      "detalles": "Terreno casi plano (llanura amazónica estricta). La pendiente no genera variación observable en el fuego."
+    },
+    "c5_grilla_ca": {
+      "aspect_ratio": "1.8:1 (lineal a lo largo de carretera)",
+      "score_c5": 8.5,
+      "detalles": "Focos dispersos a lo largo de la vía Interoceánica. Tiende a escapar la sub-grilla."
+    }
+  },
+  "San Martin": {
+    "puntaje_total": 7.49,
+    "c1_firms": {
+      "total_focos": 508,
+      "conf_altas": 15,
+      "pct_alta_calidad": 82.3,
+      "frp_max": 209.16,
+      "frp_mean": 13.55,
+      "clustering_index": 0.557,
+      "score_c1": 8.14
+    },
+    "c2_viento": {
+      "total_horas": 120,
+      "disponibilidad_pct": 100.0,
+      "vel_media_ms": 1.33,
+      "vel_max_ms": 2.97,
+      "gust_max_ms": 8.39,
+      "consistencia_direccional_r": 0.198,
+      "score_c2": 7.4
+    },
+    "c3_vegetacion": {
+      "combustible_flamable_pct": 82.0,
+      "indice_continuidad": 0.78,
+      "score_c3": 7.5,
+      "detalles": "Cobertura fragmentada por valles interandinos y mayor nubosidad persistente en sensor óptico."
+    },
+    "c4_dem": {
+      "elevacion_min_max_m": [
+        280.0,
+        1150.0
+      ],
+      "pendiente_media_deg": 24.5,
+      "pendiente_std_deg": 14.8,
+      "score_c4": 6.8,
+      "detalles": "Pendientes abruptas y quebradas (>30°). Puede inducir inestabilidades de grilla y sombras de relieve."
+    },
+    "c5_grilla_ca": {
+      "aspect_ratio": "2.4:1 (quebradas estrechas)",
+      "score_c5": 7.0,
+      "detalles": "Foco segmentado por relieve montañoso, difícil de discretizar homogéneamente."
+    }
+  }
+}
