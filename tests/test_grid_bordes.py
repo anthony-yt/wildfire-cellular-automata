@@ -10,18 +10,15 @@ import pytest
 
 from src.model.grid import Grid, QUEMANDOSE, QUEMADA, SANA, VECINOS
 
-# Importar WindField si está disponible en la rama; en caso contrario, proveer un Mock compatible
-try:
-    from src.model.wind_influence import WindField
-except ImportError:
-    class WindField:
-        """Mock compatible de WindField para modular la probabilidad con viento."""
-        def __init__(self, speed_ms=10.0, wind_deg=0.0):
-            self.speed_ms = speed_ms
-            self.wind_deg = wind_deg
 
-        def get_factor(self, df, dc):
-            return 1.5
+class CampoVientoTest:
+    """Campo de viento compatible con la interfaz requerida por paso_tiempo."""
+    def __init__(self, speed_ms: float = 12.0, wind_deg: float = 0.0):
+        self.speed_ms = speed_ms
+        self.wind_deg = wind_deg
+
+    def get_factor(self, df: int, dc: int) -> float:
+        return 1.5
 
 
 # Si Grid.paso_tiempo aún no tiene soporte para campo_viento en esta versión,
@@ -108,7 +105,7 @@ def test_bordes_con_viento():
     for nombre, (fila, col), slice_opuesto, wind_deg in bordes:
         grid = Grid(tamano=tamano, prob_ignicion_base=1.0, pasos_para_quemarse=2, semilla=42)
         grid.vegetacion = np.ones((tamano, tamano), dtype=float)
-        viento = WindField(speed_ms=12.0, wind_deg=wind_deg)
+        viento = CampoVientoTest(speed_ms=12.0, wind_deg=wind_deg)
 
         grid.encender_celda(fila, col)
         grid.paso_tiempo(campo_viento=viento)
