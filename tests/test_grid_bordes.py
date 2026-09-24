@@ -1,11 +1,4 @@
-"""Validación de confinamiento perimetral para el autómata celular de incendios.
-
-El operador vectorizado `np.roll` introduce condiciones de frontera periódicas
-(toroide). En la simulación física de incendios forestales esto provocaría el
-teletransporte del fuego entre extremos opuestos del mapa. Este módulo valida que
-ambos bucles de propagación (vecindad de Moore estándar y modulación por viento)
-anulen estrictamente las celdas que traspasan los límites de la grilla.
-"""
+"""Valida que el fuego no salte al borde opuesto por el wrap-around toroidal de np.roll."""
 
 import inspect
 import numpy as np
@@ -14,11 +7,7 @@ from src.model.grid import Grid, QUEMANDOSE, QUEMADA, SANA, VECINOS
 
 
 class CampoVientoTest:
-    """Mock autónomo que cumple el contrato de interfaz esperado por el modelo.
-    
-    Se desacopla deliberadamente de `src.model.wind_influence` para aislar
-    la prueba de fronteras de clientes meteorológicos o dependencias externas.
-    """
+    """Mock mínimo para desacoplar la prueba perimetral del cliente meteorológico."""
     def __init__(self, speed_ms: float = 12.0, wind_deg: float = 0.0):
         self.speed_ms = speed_ms
         self.wind_deg = wind_deg
@@ -28,12 +17,7 @@ class CampoVientoTest:
 
 
 class GridBordesTest(Grid):
-    """Adaptador de pruebas para evaluar la propagación perimetral bajo viento.
-    
-    Permite mantener compatibilidad estática con el linter de la IDE en ramas
-    donde el parámetro `campo_viento` aún se encuentra desacoplado en el código base,
-    garantizando la evaluación del bucle de viento sin modificar `src/model/grid.py`.
-    """
+    """Adaptador que soporta campo_viento para evaluar bordes sin modificar Grid."""
     def paso_tiempo(self, campo_viento=None):
         if campo_viento is not None and "campo_viento" in inspect.signature(super().paso_tiempo).parameters:
             return super().paso_tiempo(campo_viento=campo_viento)
@@ -86,8 +70,7 @@ def test_bordes_sin_viento():
     ]
 
     for nombre, (fila, col), slice_opuesto in bordes:
-        # Se fija probabilidad unitaria y biomasa homogénea para eliminar aleatoriedad:
-        # si existiera fuga toroidal, el borde opuesto se encendería con 100% de certeza.
+        # Probabilidad 1.0 para forzar ignición inmediata si hubiese fuga toroidal.
         grid = Grid(tamano=tamano, prob_ignicion_base=1.0, pasos_para_quemarse=2, semilla=42)
         grid.vegetacion = np.ones((tamano, tamano), dtype=float)
 
@@ -105,8 +88,7 @@ def test_bordes_sin_viento():
 def test_bordes_con_viento():
     """Verifica contención perimetral con viento empujando directamente hacia fuera del mapa."""
     tamano = 10
-    # Ángulos configurados para maximizar empuje contra la frontera evaluada:
-    # 180° sopla al Norte, 0° al Sur, 90° al Oeste, 270° al Este.
+    # Ángulos de viento configurados para empujar el fuego directo hacia cada frontera exterior.
     bordes = [
         ("Norte", (0, 5), (slice(-1, None), slice(None)), 180.0),
         ("Sur", (tamano - 1, 5), (slice(0, 1), slice(None)), 0.0),
