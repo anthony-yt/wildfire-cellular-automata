@@ -1,62 +1,9 @@
 """Valida que el fuego no salte al borde opuesto por el wrap-around toroidal de np.roll."""
 
-import inspect
 import numpy as np
 
-from src.model.grid import Grid, QUEMANDOSE, QUEMADA, SANA, VECINOS
-
-
-class CampoVientoTest:
-    """Mock mínimo para desacoplar la prueba perimetral del cliente meteorológico."""
-    def __init__(self, speed_ms: float = 12.0, wind_deg: float = 0.0):
-        self.speed_ms = speed_ms
-        self.wind_deg = wind_deg
-
-    def get_factor(self, df: int, dc: int) -> float:
-        return 1.5
-
-
-class GridBordesTest(Grid):
-    """Adaptador que soporta campo_viento para evaluar bordes sin modificar Grid."""
-    def paso_tiempo(self, campo_viento=None):
-        if campo_viento is not None and "campo_viento" in inspect.signature(super().paso_tiempo).parameters:
-            return getattr(super(), "paso_tiempo")(**{"campo_viento": campo_viento})
-        elif campo_viento is None:
-            return super().paso_tiempo()
-
-        sanas = (self.estado == SANA)
-        quemandose = (self.estado == QUEMANDOSE)
-
-        prob_no_enciende = np.ones_like(self.vegetacion)
-        prob_base = np.clip(self.vegetacion * self.prob_ignicion_base, 0.0, 1.0)
-
-        for df, dc in VECINOS:
-            vecina = np.roll(quemandose, shift=(df, dc), axis=(0, 1))
-            if df == 1:
-                vecina[0, :] = False
-            elif df == -1:
-                vecina[-1, :] = False
-            if dc == 1:
-                vecina[:, 0] = False
-            elif dc == -1:
-                vecina[:, -1] = False
-
-            factor_viento = campo_viento.get_factor(df, dc) if hasattr(campo_viento, "get_factor") else 1.0
-            p_vecino = np.clip(prob_base * factor_viento, 0.0, 1.0)
-            prob_no_enciende *= np.where(vecina, 1.0 - p_vecino, 1.0)
-
-        prob_total = 1.0 - prob_no_enciende
-        tiradas = np.random.uniform(0, 1, self.estado.shape)
-        se_enciende = sanas & (tiradas < prob_total)
-
-        self.estado[se_enciende] = QUEMANDOSE
-        self._contador_quema[se_enciende] = 0
-
-        quemandose_antes = (self.estado == QUEMANDOSE) & ~se_enciende
-        self._contador_quema[quemandose_antes] += 1
-
-        se_apaga = quemandose_antes & (self._contador_quema >= self.pasos_para_quemarse)
-        self.estado[se_apaga] = QUEMADA
+from src.model.grid import Grid, QUEMANDOSE, QUEMADA
+from src.model.wind_influence import WindField
 
 
 def test_bordes_sin_viento():
@@ -97,9 +44,9 @@ def test_bordes_con_viento():
     ]
 
     for nombre, (fila, col), slice_opuesto, wind_deg in bordes:
-        grid = GridBordesTest(tamano=tamano, prob_ignicion_base=1.0, pasos_para_quemarse=2, semilla=42)
+        grid = Grid(tamano=tamano, prob_ignicion_base=1.0, pasos_para_quemarse=2, semilla=42)
         grid.vegetacion = np.ones((tamano, tamano), dtype=float)
-        viento = CampoVientoTest(speed_ms=12.0, wind_deg=wind_deg)
+        viento = WindField(speed_ms=12.0, wind_deg=wind_deg)
 
         grid.encender_celda(fila, col)
         grid.paso_tiempo(campo_viento=viento)

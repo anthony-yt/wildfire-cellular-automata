@@ -10,12 +10,22 @@ __pycache__/
 
 .env
 *.env
+!.env.example
 *api_key*
 
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+!data/raw/firms/
+!data/raw/firms/firms_caso_estudio_seleccionado.*
+!data/raw/weather/
+!data/raw/weather/weather_caso_estudio_seleccionado.*
+!data/raw/vegetation/
+!data/raw/vegetation/vegetacion_caso_estudio_metadata.*
+!data/raw/dem/
+!data/raw/dem/dem_caso_estudio_metadata.*
+!data/processed/evaluacion_multicriterio_resumen.json
 
 .DS_Store
 Thumbs.db

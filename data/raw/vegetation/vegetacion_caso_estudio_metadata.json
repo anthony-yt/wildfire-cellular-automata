@@ -1,0 +1,26 @@
+{
+  "dataset": "ESA WorldCover 10m (v200 - 2021)",
+  "source": "European Space Agency (ESA) via AWS / Earthdata",
+  "region": "Ucayali",
+  "tile": "ESA_WorldCover_10m_2021_v200_S09W075_Map.tif",
+  "bounding_box_subwindow": [
+    -74.65,
+    -8.45,
+    -74.45,
+    -8.3
+  ],
+  "spatial_resolution_m": 10.0,
+  "crs": "EPSG:4326",
+  "flammable_classes": {
+    "10": "Tree cover (Bosque Húmedo)",
+    "20": "Shrubland (Matorral/Purma)",
+    "30": "Grassland (Pastizales)",
+    "40": "Cropland (Cultivos/Rastrojo)"
+  },
+  "barrier_classes": {
+    "50": "Built-up (Caminos/Zonas urbanas)",
+    "80": "Permanent water bodies (Ríos y lagos)"
+  },
+  "flammable_biomass_pct": 94.2,
+  "notebook_reference": "notebooks/exploracion_vegetacion_ESA_ipyn.ipynb"
+}

@@ -67,15 +67,38 @@ class Grid:
 
         return hay_vecina_en_llamas
 
-    def paso_tiempo(self):
+    def paso_tiempo(self, campo_viento=None):
         sanas = (self.estado == SANA)
-        vecina_en_llamas = self._vecinas_quemandose()
+        quemandose = (self.estado == QUEMANDOSE)
 
-        # Por ahora la probabilidad solo depende de la vegetación.
-        probabilidad = self.vegetacion * self.prob_ignicion_base
-        tiradas = np.random.uniform(0, 1, self.estado.shape)
+        if campo_viento is None:
+            vecina_en_llamas = self._vecinas_quemandose()
+            probabilidad = self.vegetacion * self.prob_ignicion_base
+            tiradas = np.random.uniform(0, 1, self.estado.shape)
+            se_enciende = sanas & vecina_en_llamas & (tiradas < probabilidad)
+        else:
+            # Probabilidad de ignición combinada considerando la dirección y factor de cada vecino
+            prob_no_enciende = np.ones_like(self.vegetacion)
+            prob_base = np.clip(self.vegetacion * self.prob_ignicion_base, 0.0, 1.0)
 
-        se_enciende = sanas & vecina_en_llamas & (tiradas < probabilidad)
+            for df, dc in VECINOS:
+                vecina = np.roll(quemandose, shift=(df, dc), axis=(0, 1))
+                if df == 1:
+                    vecina[0, :] = False
+                elif df == -1:
+                    vecina[-1, :] = False
+                if dc == 1:
+                    vecina[:, 0] = False
+                elif dc == -1:
+                    vecina[:, -1] = False
+                factor_viento = campo_viento.get_factor(df, dc)
+                p_vecino = np.clip(prob_base * factor_viento, 0.0, 1.0)
+                prob_no_enciende *= np.where(vecina, 1.0 - p_vecino, 1.0)
+
+            prob_total = 1.0 - prob_no_enciende
+            tiradas = np.random.uniform(0, 1, self.estado.shape)
+            se_enciende = sanas & (tiradas < prob_total)
+
         self.estado[se_enciende] = QUEMANDOSE
         self._contador_quema[se_enciende] = 0
 
@@ -84,6 +107,7 @@ class Grid:
 
         se_apaga = quemandose_antes & (self._contador_quema >= self.pasos_para_quemarse)
         self.estado[se_apaga] = QUEMADA
+
 
     def contar_estados(self):
         return {
