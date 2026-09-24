@@ -43,6 +43,9 @@ def deg_to_cardinal(deg: Optional[float]) -> str:
     return CARDINAL_DIRECTIONS[idx]
 
 
+from src.model.wind_influence import calculate_wind_direction_spread
+
+
 def wind_propagation_vector(speed_ms: float, wind_deg: float) -> Dict[str, float]:
     """Calcula componentes del vector de empuje del viento sobre el fuego.
 
@@ -50,7 +53,7 @@ def wind_propagation_vector(speed_ms: float, wind_deg: float) -> Dict[str, float
     El fuego es empujado HACIA la dirección opuesta (hacia el Norte).
     """
     # Dirección hacia la que viaja el viento en radianes
-    travel_deg = (wind_deg + 180.0) % 360.0
+    travel_deg = calculate_wind_direction_spread(wind_deg)
     travel_rad = math.radians(travel_deg)
 
     # Componentes cartesianas (u = Este-Oeste, v = Norte-Sur)

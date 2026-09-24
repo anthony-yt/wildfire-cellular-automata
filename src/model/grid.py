@@ -14,6 +14,20 @@ VECINOS = [
 ]
 
 
+def _desplazar_vecino(matriz: np.ndarray, df: int, dc: int) -> np.ndarray:
+    """Desplaza una matriz 2D en (df, dc) anulando las fronteras envueltas por np.roll."""
+    vecina = np.roll(matriz, shift=(df, dc), axis=(0, 1))
+    if df == 1:
+        vecina[0, :] = False
+    elif df == -1:
+        vecina[-1, :] = False
+    if dc == 1:
+        vecina[:, 0] = False
+    elif dc == -1:
+        vecina[:, -1] = False
+    return vecina
+
+
 class Grid:
 
     def __init__(self, tamano=50, prob_ignicion_base=0.3, pasos_para_quemarse=2, semilla=None):
@@ -45,25 +59,12 @@ class Grid:
         self.estado[fila, columna] = AGUA
 
     def _vecinas_quemandose(self):
-        # Para cada una de las 8 direcciones, desplazamos el grid y vemos
-        # si hay una celda quemándose ahí. Con np.roll evitamos hacer un
-        # for por cada celda.
+        # Desplazamos el grid para cada vecino y vemos si hay fuego sin bucles por celda.
         quemandose = (self.estado == QUEMANDOSE)
         hay_vecina_en_llamas = np.zeros_like(quemandose)
 
         for df, dc in VECINOS:
-            vecina = np.roll(quemandose, shift=(df, dc), axis=(0, 1))
-            # np.roll envuelve los bordes (toroide). Anulamos las filas/columnas
-            # que se "envolvieron" para que el fuego no traspase los límites del mapa.
-            if df == 1:
-                vecina[0, :] = False
-            elif df == -1:
-                vecina[-1, :] = False
-            if dc == 1:
-                vecina[:, 0] = False
-            elif dc == -1:
-                vecina[:, -1] = False
-            hay_vecina_en_llamas |= vecina
+            hay_vecina_en_llamas |= _desplazar_vecino(quemandose, df, dc)
 
         return hay_vecina_en_llamas
 
@@ -82,15 +83,7 @@ class Grid:
             prob_base = np.clip(self.vegetacion * self.prob_ignicion_base, 0.0, 1.0)
 
             for df, dc in VECINOS:
-                vecina = np.roll(quemandose, shift=(df, dc), axis=(0, 1))
-                if df == 1:
-                    vecina[0, :] = False
-                elif df == -1:
-                    vecina[-1, :] = False
-                if dc == 1:
-                    vecina[:, 0] = False
-                elif dc == -1:
-                    vecina[:, -1] = False
+                vecina = _desplazar_vecino(quemandose, df, dc)
                 factor_viento = campo_viento.get_factor(df, dc)
                 p_vecino = np.clip(prob_base * factor_viento, 0.0, 1.0)
                 prob_no_enciende *= np.where(vecina, 1.0 - p_vecino, 1.0)

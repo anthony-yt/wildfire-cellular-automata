@@ -77,6 +77,17 @@ def _leyenda() -> list[Patch]:
     ]
 
 
+def _aplicar_leyenda(ax: plt.Axes) -> None:
+    """Configura la leyenda estándar de estados bajo el eje."""
+    ax.legend(
+        handles=_leyenda(),
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.03),
+        ncol=5,
+        frameon=False,
+    )
+
+
 def dibujar_grid(
     grid: Grid,
     ax: Optional[plt.Axes] = None,
@@ -111,13 +122,7 @@ def dibujar_grid(
         ax.set_title(titulo)
 
     if mostrar_leyenda:
-        ax.legend(
-            handles=_leyenda(),
-            loc="upper center",
-            bbox_to_anchor=(0.5, -0.03),
-            ncol=5,
-            frameon=False,
-        )
+        _aplicar_leyenda(ax)
 
     return fig, ax, im
 
@@ -150,13 +155,7 @@ def animar_grid(
     obj_titulo = ax.set_title(titulo_fn(0))
 
     if mostrar_leyenda:
-        ax.legend(
-            handles=_leyenda(),
-            loc="upper center",
-            bbox_to_anchor=(0.5, -0.03),
-            ncol=5,
-            frameon=False,
-        )
+        _aplicar_leyenda(ax)
     fig.tight_layout()
 
     def _actualizar(i):
