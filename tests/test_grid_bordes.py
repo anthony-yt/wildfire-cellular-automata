@@ -20,7 +20,7 @@ class GridBordesTest(Grid):
     """Adaptador que soporta campo_viento para evaluar bordes sin modificar Grid."""
     def paso_tiempo(self, campo_viento=None):
         if campo_viento is not None and "campo_viento" in inspect.signature(super().paso_tiempo).parameters:
-            return super().paso_tiempo(campo_viento=campo_viento)
+            return getattr(super(), "paso_tiempo")(**{"campo_viento": campo_viento})
         elif campo_viento is None:
             return super().paso_tiempo()
 
