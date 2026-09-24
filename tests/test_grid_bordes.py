@@ -1,18 +1,24 @@
-"""Pruebas unitarias para verificar el comportamiento en los límites (bordes) de la grilla.
+"""Validación de confinamiento perimetral para el autómata celular de incendios.
 
-Asegura que el fuego no traspase los límites del mapa (efecto toroide / wrap-around de np.roll)
-tanto en la propagación básica (_vecinas_quemandose) como en la rama con viento (paso_tiempo con campo_viento).
+El operador vectorizado `np.roll` introduce condiciones de frontera periódicas
+(toroide). En la simulación física de incendios forestales esto provocaría el
+teletransporte del fuego entre extremos opuestos del mapa. Este módulo valida que
+ambos bucles de propagación (vecindad de Moore estándar y modulación por viento)
+anulen estrictamente las celdas que traspasan los límites de la grilla.
 """
 
 import inspect
 import numpy as np
-import pytest
 
 from src.model.grid import Grid, QUEMANDOSE, QUEMADA, SANA, VECINOS
 
 
 class CampoVientoTest:
-    """Campo de viento compatible con la interfaz requerida por paso_tiempo."""
+    """Mock autónomo que cumple el contrato de interfaz esperado por el modelo.
+    
+    Se desacopla deliberadamente de `src.model.wind_influence` para aislar
+    la prueba de fronteras de clientes meteorológicos o dependencias externas.
+    """
     def __init__(self, speed_ms: float = 12.0, wind_deg: float = 0.0):
         self.speed_ms = speed_ms
         self.wind_deg = wind_deg
@@ -21,14 +27,18 @@ class CampoVientoTest:
         return 1.5
 
 
-# Si Grid.paso_tiempo aún no tiene soporte para campo_viento en esta versión,
-# adaptamos dinámicamente el método para cubrir el bucle de viento sin modificar grid.py
-if "campo_viento" not in inspect.signature(Grid.paso_tiempo).parameters:
-    _orig_paso_tiempo = Grid.paso_tiempo
-
-    def _paso_tiempo_con_viento(self, campo_viento=None):
-        if campo_viento is None:
-            return _orig_paso_tiempo(self)
+class GridBordesTest(Grid):
+    """Adaptador de pruebas para evaluar la propagación perimetral bajo viento.
+    
+    Permite mantener compatibilidad estática con el linter de la IDE en ramas
+    donde el parámetro `campo_viento` aún se encuentra desacoplado en el código base,
+    garantizando la evaluación del bucle de viento sin modificar `src/model/grid.py`.
+    """
+    def paso_tiempo(self, campo_viento=None):
+        if campo_viento is not None and "campo_viento" in inspect.signature(super().paso_tiempo).parameters:
+            return super().paso_tiempo(campo_viento=campo_viento)
+        elif campo_viento is None:
+            return super().paso_tiempo()
 
         sanas = (self.estado == SANA)
         quemandose = (self.estado == QUEMANDOSE)
@@ -64,20 +74,20 @@ if "campo_viento" not in inspect.signature(Grid.paso_tiempo).parameters:
         se_apaga = quemandose_antes & (self._contador_quema >= self.pasos_para_quemarse)
         self.estado[se_apaga] = QUEMADA
 
-    Grid.paso_tiempo = _paso_tiempo_con_viento
-
 
 def test_bordes_sin_viento():
-    """Enciende una celda en cada uno de los 4 bordes (sin viento), corre 1 paso y verifica que los bordes opuestos no se encienden."""
+    """Verifica que el fuego en cada uno de los 4 bordes no se propaga al extremo opuesto."""
     tamano = 10
     bordes = [
-        ("Norte", (0, 5), (slice(-1, None), slice(None))),       # Fila 0 -> Borde opuesto: Fila inferior (tamano - 1)
-        ("Sur", (tamano - 1, 5), (slice(0, 1), slice(None))),   # Fila tamano-1 -> Borde opuesto: Fila superior (0)
-        ("Oeste", (5, 0), (slice(None), slice(-1, None))),      # Columna 0 -> Borde opuesto: Columna derecha (tamano - 1)
-        ("Este", (5, tamano - 1), (slice(None), slice(0, 1))),  # Columna tamano-1 -> Borde opuesto: Columna izquierda (0)
+        ("Norte", (0, 5), (slice(-1, None), slice(None))),
+        ("Sur", (tamano - 1, 5), (slice(0, 1), slice(None))),
+        ("Oeste", (5, 0), (slice(None), slice(-1, None))),
+        ("Este", (5, tamano - 1), (slice(None), slice(0, 1))),
     ]
 
     for nombre, (fila, col), slice_opuesto in bordes:
+        # Se fija probabilidad unitaria y biomasa homogénea para eliminar aleatoriedad:
+        # si existiera fuga toroidal, el borde opuesto se encendería con 100% de certeza.
         grid = Grid(tamano=tamano, prob_ignicion_base=1.0, pasos_para_quemarse=2, semilla=42)
         grid.vegetacion = np.ones((tamano, tamano), dtype=float)
 
@@ -85,25 +95,27 @@ def test_bordes_sin_viento():
         grid.paso_tiempo()
 
         borde_opuesto = grid.estado[slice_opuesto]
-        celdas_encendidas_opuesto = np.isin(borde_opuesto, [QUEMANDOSE, QUEMADA])
-        assert not np.any(celdas_encendidas_opuesto), (
-            f"[Sin viento] El fuego en el borde {nombre} ({fila}, {col}) "
-            f"traspasó toroidomente al borde opuesto."
+        celdas_encendidas = np.isin(borde_opuesto, [QUEMANDOSE, QUEMADA])
+        assert not np.any(celdas_encendidas), (
+            f"[Sin viento] El fuego en borde {nombre} ({fila}, {col}) "
+            f"se propagó incorrectamente al borde opuesto."
         )
 
 
 def test_bordes_con_viento():
-    """Enciende una celda en cada uno de los 4 bordes (con viento activo), corre 1 paso y verifica que los bordes opuestos no se encienden."""
+    """Verifica contención perimetral con viento empujando directamente hacia fuera del mapa."""
     tamano = 10
+    # Ángulos configurados para maximizar empuje contra la frontera evaluada:
+    # 180° sopla al Norte, 0° al Sur, 90° al Oeste, 270° al Este.
     bordes = [
-        ("Norte", (0, 5), (slice(-1, None), slice(None)), 180.0),  # Viento hacia el Norte
-        ("Sur", (tamano - 1, 5), (slice(0, 1), slice(None)), 0.0),   # Viento hacia el Sur
-        ("Oeste", (5, 0), (slice(None), slice(-1, None)), 90.0),   # Viento hacia el Oeste
-        ("Este", (5, tamano - 1), (slice(None), slice(0, 1)), 270.0), # Viento hacia el Este
+        ("Norte", (0, 5), (slice(-1, None), slice(None)), 180.0),
+        ("Sur", (tamano - 1, 5), (slice(0, 1), slice(None)), 0.0),
+        ("Oeste", (5, 0), (slice(None), slice(-1, None)), 90.0),
+        ("Este", (5, tamano - 1), (slice(None), slice(0, 1)), 270.0),
     ]
 
     for nombre, (fila, col), slice_opuesto, wind_deg in bordes:
-        grid = Grid(tamano=tamano, prob_ignicion_base=1.0, pasos_para_quemarse=2, semilla=42)
+        grid = GridBordesTest(tamano=tamano, prob_ignicion_base=1.0, pasos_para_quemarse=2, semilla=42)
         grid.vegetacion = np.ones((tamano, tamano), dtype=float)
         viento = CampoVientoTest(speed_ms=12.0, wind_deg=wind_deg)
 
@@ -111,8 +123,8 @@ def test_bordes_con_viento():
         grid.paso_tiempo(campo_viento=viento)
 
         borde_opuesto = grid.estado[slice_opuesto]
-        celdas_encendidas_opuesto = np.isin(borde_opuesto, [QUEMANDOSE, QUEMADA])
-        assert not np.any(celdas_encendidas_opuesto), (
-            f"[Con viento {wind_deg}°] El fuego en el borde {nombre} ({fila}, {col}) "
-            f"traspasó toroidomente al borde opuesto."
+        celdas_encendidas = np.isin(borde_opuesto, [QUEMANDOSE, QUEMADA])
+        assert not np.any(celdas_encendidas), (
+            f"[Con viento {wind_deg}°] El fuego en borde {nombre} ({fila}, {col}) "
+            f"se propagó incorrectamente al borde opuesto."
         )
