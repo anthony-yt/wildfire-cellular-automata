@@ -5,12 +5,34 @@ SANA = 0
 QUEMANDOSE = 1
 QUEMADA = 2
 NO_COMBUSTIBLE = 3
+AGUA = 4
 
 # Vecindad de Moore
 VECINOS = [
     (-1, 0), (1, 0), (0, 1), (0, -1),
     (-1, 1), (-1, -1), (1, 1), (1, -1),
 ]
+
+# Constante de sensibilidad a la pendiente (Alexandridis et al., 2008; Freire, 2019)
+DEFAULT_AS = 0.078
+
+
+def _desplazar_vecino(matriz: np.ndarray, df: int, dc: int) -> np.ndarray:
+    """Desplaza una matriz 2D en (df, dc) anulando las fronteras envueltas por np.roll.
+
+    Elimina la condición de frontera toroidal periódica, garantizando que
+    el fuego en un borde no cruce al extremo opuesto de la grilla.
+    """
+    vecina = np.roll(matriz, shift=(df, dc), axis=(0, 1))
+    if df == 1:
+        vecina[0, :] = False
+    elif df == -1:
+        vecina[-1, :] = False
+    if dc == 1:
+        vecina[:, 0] = False
+    elif dc == -1:
+        vecina[:, -1] = False
+    return vecina
 
 
 class Grid:
@@ -25,7 +47,7 @@ class Grid:
 
         self.estado = np.full((tamano, tamano), SANA, dtype=np.int8)
 
-        # Vegetación y pendiente sintéticas (todavía no tenemos los datos reales)
+        # Vegetación y pendiente
         self.vegetacion = np.random.uniform(0, 1, (tamano, tamano))
         self.pendiente = np.random.uniform(0, 1, (tamano, tamano))
 
@@ -35,35 +57,45 @@ class Grid:
         self.estado[fila, columna] = QUEMANDOSE
         self._contador_quema[fila, columna] = 0
 
+    def agregar_obstaculo(self, fila, columna):
+        """Asigna una celda como no combustible (rocas / caminos)."""
+        self.estado[fila, columna] = NO_COMBUSTIBLE
+
+    def agregar_rio(self, fila, columna):
+        """Asigna una celda como agua (río / cuerpos de agua)."""
+        self.estado[fila, columna] = AGUA
+
     def _vecinas_quemandose(self):
-        # Para cada una de las 8 direcciones, desplazamos el grid y vemos
-        # si hay una celda quemándose ahí. Con np.roll evitamos hacer un
-        # for por cada celda.
+        # Desplazamos el grid para cada vecino y verificamos si hay fuego
+        # anulando las fronteras para evitar el wrap toroidal de np.roll.
         quemandose = (self.estado == QUEMANDOSE)
         hay_vecina_en_llamas = np.zeros_like(quemandose)
 
         for df, dc in VECINOS:
-            vecina = np.roll(quemandose, shift=(df, dc), axis=(0, 1))
-            hay_vecina_en_llamas |= vecina
+            hay_vecina_en_llamas |= _desplazar_vecino(quemandose, df, dc)
 
         return hay_vecina_en_llamas
 
-    def paso_tiempo(self, campo_viento=None):
+    def paso_tiempo(self, campo_viento=None, as_slope=DEFAULT_AS):
         sanas = (self.estado == SANA)
         quemandose = (self.estado == QUEMANDOSE)
 
+        # Modulación por pendiente (Alexandridis et al., 2008: exp(as * slope_deg))
+        # Si pendiente está entre 0 y 1 (sintética), o en grados reales (>1), calculamos fs
+        factor_pendiente = np.exp(as_slope * self.pendiente) if self.pendiente is not None else 1.0
+
         if campo_viento is None:
             vecina_en_llamas = self._vecinas_quemandose()
-            probabilidad = self.vegetacion * self.prob_ignicion_base
+            probabilidad = np.clip(self.vegetacion * self.prob_ignicion_base * factor_pendiente, 0.0, 1.0)
             tiradas = np.random.uniform(0, 1, self.estado.shape)
             se_enciende = sanas & vecina_en_llamas & (tiradas < probabilidad)
         else:
             # Probabilidad de ignición combinada considerando la dirección y factor de cada vecino
             prob_no_enciende = np.ones_like(self.vegetacion)
-            prob_base = np.clip(self.vegetacion * self.prob_ignicion_base, 0.0, 1.0)
+            prob_base = np.clip(self.vegetacion * self.prob_ignicion_base * factor_pendiente, 0.0, 1.0)
 
             for df, dc in VECINOS:
-                vecina = np.roll(quemandose, shift=(df, dc), axis=(0, 1))
+                vecina = _desplazar_vecino(quemandose, df, dc)
                 factor_viento = campo_viento.get_factor(df, dc)
                 p_vecino = np.clip(prob_base * factor_viento, 0.0, 1.0)
                 prob_no_enciende *= np.where(vecina, 1.0 - p_vecino, 1.0)
@@ -81,11 +113,11 @@ class Grid:
         se_apaga = quemandose_antes & (self._contador_quema >= self.pasos_para_quemarse)
         self.estado[se_apaga] = QUEMADA
 
-
     def contar_estados(self):
         return {
             "Sana": int(np.sum(self.estado == SANA)),
             "Quemandose": int(np.sum(self.estado == QUEMANDOSE)),
             "Quemada": int(np.sum(self.estado == QUEMADA)),
             "No_combustible": int(np.sum(self.estado == NO_COMBUSTIBLE)),
+            "Agua": int(np.sum(self.estado == AGUA)),
         }

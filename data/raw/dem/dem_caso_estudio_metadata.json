@@ -11,10 +11,10 @@
   ],
   "spatial_resolution_m": 30.0,
   "crs": "EPSG:4326",
-  "elevation_min_m": 142.0,
-  "elevation_max_m": 208.0,
-  "mean_slope_deg": 5.8,
-  "std_slope_deg": 3.6,
+  "elevation_min_m": 142.6,
+  "elevation_max_m": 207.5,
+  "mean_slope_deg": 4.76,
+  "std_slope_deg": 2.08,
   "nodata_value": -32768.0,
   "notebook_reference": "notebooks/exploracion_SRTM_dem.ipynb"
 }

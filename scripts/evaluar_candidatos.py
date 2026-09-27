@@ -95,12 +95,19 @@ def calcular_clustering_espacial(points: List[Dict[str, Any]]) -> float:
 
 
 def evaluar_focos_firms(firms_client: FIRMSClient, candidate_name: str, config: Dict[str, Any]) -> Dict[str, Any]:
-    """Evalúa el Criterio 1: NASA FIRMS."""
+    """Evalúa el Criterio 1: NASA FIRMS (Task 2.1)."""
     bbox = config["macro_bbox"]
     points = []
+    start_date = config["target_dates"][0]
     
     try:
-        points = firms_client.get_fire_points(bbox=bbox, day_range=3, source="VIIRS_SNPP_NRT")
+        # Usamos el archivo histórico Standard Processing (VIIRS_SNPP_SP) para el rango exacto de agosto 2024
+        points = firms_client.get_fire_points(
+            bbox=bbox,
+            day_range=5,
+            source="VIIRS_SNPP_SP",
+            date_str=start_date,
+        )
     except Exception as e:
         print(f"[!] Error consultando FIRMS para {candidate_name}: {e}")
     
@@ -116,8 +123,8 @@ def evaluar_focos_firms(firms_client: FIRMSClient, candidate_name: str, config: 
     clustering = calcular_clustering_espacial(points)
     
     # Normalización del puntaje C1 (1 a 10)
-    # Volumen: hasta 300 focos da 4 pts; calidad: hasta 3 pts; clustering: hasta 3 pts
-    score_volumen = min(4.0, (total / 100.0) * 1.0)
+    # Volumen: hasta 1000 focos da 4 pts; calidad: hasta 3 pts; clustering: hasta 3 pts
+    score_volumen = min(4.0, (total / 1000.0) * 4.0)
     score_calidad = (pct_alta_calidad / 100.0) * 3.0
     score_cluster = clustering * 3.0
     c1_score = round(float(np.clip(score_volumen + score_calidad + score_cluster, 1.0, 10.0)), 2)
@@ -178,29 +185,37 @@ def evaluar_viento(weather_client: WeatherClient, candidate_name: str, config: D
 
 
 def evaluar_vegetacion(candidate_name: str, config: Dict[str, Any]) -> Dict[str, Any]:
-    """Evalúa el Criterio 3: Cobertura Vegetal ESA WorldCover 10m (Task 1.3)."""
-    # En base al notebook exploracion_vegetacion_ESA_ipyn.ipynb fusionado:
-    # Ucayali (Pucallpa S09W075): Dominancia masiva de Bosque Húmedo (Clase 10: 78.4%),
-    # Matorrales/Purmas (Clase 20: 11.2%), Pastizales/Cultivos (Clase 30/40: 6.8%),
-    # Agua definida (Clase 80: 3.1%). Sin artefactos de nubes, 100% libre de vacíos.
-    if candidate_name == "Ucayali":
-        combustible_pct = 94.2
-        continuidad = 0.95
-        resolucion_score = 9.8  # 10m nativo verificado en notebook
-        c3_score = 9.5
-        detalles = "Excelente continuidad de combustible arbóreo y matorral. Mosaico S09W075 validado en Colab."
+    """Evalúa el Criterio 3: Cobertura Vegetal ESA WorldCover 10m (Task 1.3 / Task 2.3)."""
+    # Si existe recorte local numpy para la región, derivar métricas directas
+    matriz_path = PROJECT_ROOT / "data" / "raw" / "vegetation" / f"{candidate_name.lower().replace(' ', '_')}_vegetacion_50x50.npy"
+    if candidate_name == "Ucayali" and not matriz_path.exists():
+        matriz_path = PROJECT_ROOT / "data" / "raw" / "vegetation" / "pucallpa_vegetacion_50x50.npy"
+    
+    if matriz_path.exists():
+        matriz_veg = np.load(matriz_path)
+        # Clases flamables ESA: 10: Bosque, 20: Matorral, 30: Pasto, 40: Cultivo
+        flamable_mask = np.isin(matriz_veg, [10, 20, 30, 40])
+        combustible_pct = round(float(np.mean(flamable_mask) * 100.0), 1)
+        agua_pct = round(float(np.mean(matriz_veg == 80) * 100.0), 1)
+        continuidad = round(float(combustible_pct / 100.0 * 0.98), 3)
+        resolucion_score = 9.8
+        c3_score = round(float(np.clip((combustible_pct / 100.0) * 7.0 + continuidad * 3.0, 1.0, 10.0)), 2)
+        detalles = (
+            f"Calculado directamente de matriz real ESA WorldCover ({matriz_path.name}): "
+            f"{combustible_pct}% biomasa flamable, {agua_pct}% barrera de agua (Río Ucayali), sin nubes."
+        )
     elif candidate_name == "Madre de Dios":
         combustible_pct = 91.5
         continuidad = 0.92
         resolucion_score = 9.2
         c3_score = 8.8
-        detalles = "Bosque tropical denso y pasturas. Alta inflamabilidad pero mayor fragmentación por minería/ríos."
+        detalles = "Estimación derivada de exploraciones GEE: Bosque tropical denso y pasturas, mayor fragmentación por minería."
     else:  # San Martín
         combustible_pct = 82.0
         continuidad = 0.78
         resolucion_score = 8.5
         c3_score = 7.5
-        detalles = "Cobertura fragmentada por valles interandinos y mayor nubosidad persistente en sensor óptico."
+        detalles = "Estimación derivada de exploraciones GEE: Cobertura fragmentada por valles interandinos y mayor nubosidad."
     
     return {
         "combustible_flamable_pct": combustible_pct,
@@ -211,30 +226,42 @@ def evaluar_vegetacion(candidate_name: str, config: Dict[str, Any]) -> Dict[str,
 
 
 def evaluar_topografia_dem(candidate_name: str, config: Dict[str, Any]) -> Dict[str, Any]:
-    """Evalúa el Criterio 4: DEM SRTM 30m y Pendiente (Task 1.4)."""
-    # En base al notebook exploracion_SRTM_dem.ipynb fusionado:
-    # Ucayali (Pucallpa_SRTM_30m.tif): Elevación 140m a 210m.
-    # Pendientes promedio entre 3° y 12°, con micro-relieve ondulado sin vacíos NoData.
-    # Ideal para calibrar la regla de aceleración por pendiente en CA sin divergencia numérica.
-    if candidate_name == "Ucayali":
-        rango_elevacion = (142.0, 208.0)
-        pendiente_media_deg = 5.8
-        pendiente_std = 3.6
+    """Evalúa el Criterio 4: DEM SRTM 30m y Pendiente (Task 1.4 / Task 2.3)."""
+    dem_path = PROJECT_ROOT / "data" / "raw" / "dem" / f"{candidate_name.lower().replace(' ', '_')}_dem_50x50.npy"
+    if candidate_name == "Ucayali" and not dem_path.exists():
+        dem_path = PROJECT_ROOT / "data" / "raw" / "dem" / "pucallpa_dem_50x50.npy"
+
+    if dem_path.exists():
+        dem = np.load(dem_path)
+        elev_min = round(float(np.min(dem)), 1)
+        elev_max = round(float(np.max(dem)), 1)
+        rango_elevacion = (elev_min, elev_max)
+        
+        # Cálculo matemático de gradientes y pendiente a resolución de 30m
+        gy, gx = np.gradient(dem, 30.0, 30.0)
+        pend_mat = np.degrees(np.arctan(np.sqrt(gx**2 + gy**2)))
+        pendiente_media_deg = round(float(np.mean(pend_mat)), 2)
+        pendiente_std = round(float(np.std(pend_mat)), 2)
+        
+        # Pendientes moderadas (3°-12°) son ideales para autómata híbrido celular sin divergencia
         c4_score = 9.2
-        detalles = "Relieve suave-ondulado con pendientes moderadas (3°-12°). Ideal para autómata híbrido celular."
+        detalles = (
+            f"Derivado directamente de DEM SRTM ({dem_path.name}): "
+            f"Elevación {elev_min}m-{elev_max}m, Pendiente media {pendiente_media_deg}° (±{pendiente_std}°)."
+        )
     elif candidate_name == "Madre de Dios":
         rango_elevacion = (185.0, 240.0)
         pendiente_media_deg = 1.8
         pendiente_std = 1.2
         c4_score = 7.2
-        detalles = "Terreno casi plano (llanura amazónica estricta). La pendiente no genera variación observable en el fuego."
+        detalles = "Terreno casi plano (llanura aluvial amazónica). La pendiente casi no modula el avance del fuego."
     else:  # San Martín
         rango_elevacion = (280.0, 1150.0)
         pendiente_media_deg = 24.5
         pendiente_std = 14.8
         c4_score = 6.8
-        detalles = "Pendientes abruptas y quebradas (>30°). Puede inducir inestabilidades de grilla y sombras de relieve."
-    
+        detalles = "Pendientes abruptas (>30°) en relieve montañoso, susceptible a artefactos de sombra."
+
     return {
         "elevacion_min_max_m": rango_elevacion,
         "pendiente_media_deg": pendiente_media_deg,
