@@ -13,7 +13,6 @@ VECINOS = [
     (-1, 1), (-1, -1), (1, 1), (1, -1),
 ]
 
-
 def _desplazar_vecino(matriz: np.ndarray, df: int, dc: int) -> np.ndarray:
     """Desplaza una matriz 2D en (df, dc) anulando las fronteras envueltas por np.roll."""
     vecina = np.roll(matriz, shift=(df, dc), axis=(0, 1))
@@ -27,9 +26,7 @@ def _desplazar_vecino(matriz: np.ndarray, df: int, dc: int) -> np.ndarray:
         vecina[:, -1] = False
     return vecina
 
-
 class Grid:
-
     def __init__(self, tamano=50, prob_ignicion_base=0.3, pasos_para_quemarse=2, semilla=None):
         if semilla is not None:
             np.random.seed(semilla)
@@ -68,11 +65,15 @@ class Grid:
 
         return hay_vecina_en_llamas
 
-    def paso_tiempo(self, campo_viento=None):
+    def paso_tiempo(self, campo_viento=None, formulacion=None):
         sanas = (self.estado == SANA)
         quemandose = (self.estado == QUEMANDOSE)
 
-        if campo_viento is None:
+        if formulacion is not None:
+            prob_total = np.clip(formulacion.probabilidad_ignicion(self, campo_viento), 0.0, 1.0)
+            tiradas = np.random.uniform(0, 1, self.estado.shape)
+            se_enciende = sanas & (tiradas < prob_total)
+        elif campo_viento is None:
             vecina_en_llamas = self._vecinas_quemandose()
             probabilidad = self.vegetacion * self.prob_ignicion_base
             tiradas = np.random.uniform(0, 1, self.estado.shape)
@@ -100,7 +101,6 @@ class Grid:
 
         se_apaga = quemandose_antes & (self._contador_quema >= self.pasos_para_quemarse)
         self.estado[se_apaga] = QUEMADA
-
 
     def contar_estados(self):
         return {
