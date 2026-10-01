@@ -1,0 +1,11 @@
+{
+    "dataset": "GOOGLE/DYNAMICWORLD/V1",
+    "periodo": "2024-08-01/2024-08-31",
+    "resolucion_salida_m": 50,
+    "clases_combustibles": [
+        1,
+        2,
+        4,
+        5
+    ]
+}
