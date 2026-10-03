@@ -1,0 +1,5 @@
+{
+    "dataset": "COPERNICUS/DEM/GLO30_2024_1",
+    "resolucion_salida_m": 50,
+    "unidad_pendiente": "grados"
+}
