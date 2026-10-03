@@ -23,3 +23,4 @@
 | 19 | The gathering firestorm in southern Amazonia | P. M. Brando et al. | 2020 | Resumido | [[Brando_2020.md](../wiki/19_Brando_2020.md)] |
 | 20 | Phase Transition in a Stochastic Forest Fire Model and Effects of the Definition of Neighborhood | Klaus Lichtenegger y Wilhelm Schappacher | 2009 | Resumido | [[Lichtenegger_2009.md](../wiki/20_Lichtenegger_2009.md)] |
 | 21 | The impact of dynamic wind flow behavior on forest fire spread using cellular automata: Application to the watershed BOUKHALEF (Morocco) | Omar Jellouli y Abdes Samed Bernoussi | 2022 | Resumido | [[Jellouli_2022.md](../wiki/21_Jellouli_2022.md)] |
+| 22 | Modelling ignition probability for human- and lightning-caused wildfires in Victoria | Annalie Dorph et al. | 2022 | Resumido | [[Dorph_2022.md](../wiki/22_Dorph_2022.md)] |
