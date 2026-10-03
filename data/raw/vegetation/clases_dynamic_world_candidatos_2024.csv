@@ -1,0 +1,28 @@
+region,clase,tipo,pixeles,porcentaje
+Ucayali,0,Agua,13228,8.99
+Ucayali,1,Arboles,67789,46.06
+Ucayali,2,Pasto,6090,4.14
+Ucayali,3,Vegetacion inundada,400,0.27
+Ucayali,4,Cultivos,7357,5.0
+Ucayali,5,Matorral,12155,8.26
+Ucayali,6,Construido,36356,24.7
+Ucayali,7,Suelo desnudo,3811,2.59
+Ucayali,8,Nieve/hielo,0,0.0
+Madre de Dios,0,Agua,19012,5.26
+Madre de Dios,1,Arboles,288275,79.69
+Madre de Dios,2,Pasto,14787,4.09
+Madre de Dios,3,Vegetacion inundada,63,0.02
+Madre de Dios,4,Cultivos,5182,1.43
+Madre de Dios,5,Matorral,17457,4.83
+Madre de Dios,6,Construido,15346,4.24
+Madre de Dios,7,Suelo desnudo,1639,0.45
+Madre de Dios,8,Nieve/hielo,1,0.0
+San Martin,0,Agua,17814,4.32
+San Martin,1,Arboles,262651,63.65
+San Martin,2,Pasto,5401,1.31
+San Martin,3,Vegetacion inundada,361,0.09
+San Martin,4,Cultivos,57289,13.88
+San Martin,5,Matorral,47980,11.63
+San Martin,6,Construido,14796,3.59
+San Martin,7,Suelo desnudo,6006,1.46
+San Martin,8,Nieve/hielo,373,0.09
