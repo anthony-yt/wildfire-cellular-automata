@@ -20,3 +20,6 @@
 | 16 | An Intelligent Cellular Automaton Scheme for Modelling Forest Fires | Joan Boters-Pitarch, María Teresa Signes-Pont, Julian Szymański y Higinio Mora-Mora | 2024 | Resumido | [[Boters-Pitarch_2024.md](../wiki/16_Boters-Pitarch_2024.md)] |
 | 17 | Modeling the Spread of Forest Fires Through Cellular Automata by Leveraging Deep Learning to Derive Transition Rules | Zucheng Zhou, Quanli Xu, Junhua Yi, Youyou Li, Shiying Zhang y Wenhui Li | 2025 | Resumido | [[Zhou_2025.md](../wiki/17_Zhou_2025.md)] |
 | 18 | Neural-Parameterized Cellular Automata for Wildfire Spread | Maksym Zhenirovskyy, Ion Matei, Rohit Vuppala, Takuya Kurihana y Hon Yung Wonga | 2026 | Resumido | [[Zhenirovskyy_2026.md](../wiki/18_Zhenirovskyy_2026.md)] |
+| 19 | The gathering firestorm in southern Amazonia | P. M. Brando et al. | 2020 | Resumido | [[Brando_2020.md](../wiki/19_Brando_2020.md)] |
+| 20 | Phase Transition in a Stochastic Forest Fire Model and Effects of the Definition of Neighborhood | Klaus Lichtenegger y Wilhelm Schappacher | 2009 | Resumido | [[Lichtenegger_2009.md](../wiki/20_Lichtenegger_2009.md)] |
+| 21 | The impact of dynamic wind flow behavior on forest fire spread using cellular automata: Application to the watershed BOUKHALEF (Morocco) | Omar Jellouli y Abdes Samed Bernoussi | 2022 | Resumido | [[Jellouli_2022.md](../wiki/21_Jellouli_2022.md)] |
