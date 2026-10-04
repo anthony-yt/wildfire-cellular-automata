@@ -1,6 +1,6 @@
 {
   "Ucayali": {
-    "puntaje_total": 8.68,
+    "puntaje_total": 6.89,
     "c1_firms": {
       "total_focos": 2974,
       "conf_altas": 178,
@@ -20,29 +20,31 @@
       "score_c2": 7.38
     },
     "c3_vegetacion": {
-      "combustible_flamable_pct": 91.8,
-      "indice_continuidad": 0.9,
-      "score_c3": 9.13,
-      "detalles": "Calculado directamente de matriz real ESA WorldCover (pucallpa_vegetacion_50x50.npy): 91.8% biomasa flamable, 6.0% barrera de agua (Río Ucayali), sin nubes."
+      "combustible_flamable_pct": 63.45,
+      "indice_continuidad": 0.959,
+      "score_c3": 7.32,
+      "detalles": "Calculado directamente de Dynamic World (ucayali_vegetacion_2024_50m.npy): 63.45% de cobertura combustible, 8.99% de agua y continuidad 0.959."
     },
     "c4_dem": {
       "elevacion_min_max_m": [
-        142.6,
-        207.5
+        136.0,
+        176.88
       ],
-      "pendiente_media_deg": 4.76,
-      "pendiente_std_deg": 2.08,
-      "score_c4": 9.2,
-      "detalles": "Derivado directamente de DEM SRTM (pucallpa_dem_50x50.npy): Elevación 142.6m-207.5m, Pendiente media 4.76° (±2.08°)."
+      "pendiente_media_deg": 2.17,
+      "pendiente_std_deg": 1.98,
+      "pendiente_util_pct": 23.68,
+      "score_c4": 3.13
     },
     "c5_grilla_ca": {
-      "aspect_ratio": "1:1 (cuadrática óptima)",
-      "score_c5": 9.4,
-      "detalles": "Frentes de ignición que caben en una grilla de 50x50 con celdas de 50m a 80m."
+      "focos_zona": 21,
+      "ancho_km": 18.69,
+      "alto_km": 15.63,
+      "aspect_ratio": 1.2,
+      "score_c5": 5.97
     }
   },
   "Madre de Dios": {
-    "puntaje_total": 8.43,
+    "puntaje_total": 8.06,
     "c1_firms": {
       "total_focos": 1124,
       "conf_altas": 64,
@@ -62,29 +64,31 @@
       "score_c2": 8.54
     },
     "c3_vegetacion": {
-      "combustible_flamable_pct": 91.5,
-      "indice_continuidad": 0.92,
-      "score_c3": 8.8,
-      "detalles": "Estimación derivada de exploraciones GEE: Bosque tropical denso y pasturas, mayor fragmentación por minería."
+      "combustible_flamable_pct": 90.03,
+      "indice_continuidad": 0.988,
+      "score_c3": 9.27,
+      "detalles": "Calculado directamente de Dynamic World (madre_de_dios_vegetacion_2024_50m.npy): 90.03% de cobertura combustible, 5.26% de agua y continuidad 0.988."
     },
     "c4_dem": {
       "elevacion_min_max_m": [
-        185.0,
-        240.0
+        164.0,
+        278.27
       ],
-      "pendiente_media_deg": 1.8,
-      "pendiente_std_deg": 1.2,
-      "score_c4": 7.2,
-      "detalles": "Terreno casi plano (llanura aluvial amazónica). La pendiente casi no modula el avance del fuego."
+      "pendiente_media_deg": 4.55,
+      "pendiente_std_deg": 3.42,
+      "pendiente_util_pct": 59.91,
+      "score_c4": 6.39
     },
     "c5_grilla_ca": {
-      "aspect_ratio": "1.8:1 (lineal a lo largo de carretera)",
-      "score_c5": 8.5,
-      "detalles": "Focos dispersos a lo largo de la vía Interoceánica. Tiende a escapar la sub-grilla."
+      "focos_zona": 22,
+      "ancho_km": 25.71,
+      "alto_km": 24.96,
+      "aspect_ratio": 1.03,
+      "score_c5": 6.24
     }
   },
   "San Martin": {
-    "puntaje_total": 7.64,
+    "puntaje_total": 7.31,
     "c1_firms": {
       "total_focos": 1433,
       "conf_altas": 88,
@@ -104,25 +108,27 @@
       "score_c2": 7.4
     },
     "c3_vegetacion": {
-      "combustible_flamable_pct": 82.0,
-      "indice_continuidad": 0.78,
-      "score_c3": 7.5,
-      "detalles": "Estimación derivada de exploraciones GEE: Cobertura fragmentada por valles interandinos y mayor nubosidad."
+      "combustible_flamable_pct": 90.46,
+      "indice_continuidad": 0.98,
+      "score_c3": 9.27,
+      "detalles": "Calculado directamente de Dynamic World (san_martin_vegetacion_2024_50m.npy): 90.46% de cobertura combustible, 4.32% de agua y continuidad 0.98."
     },
     "c4_dem": {
       "elevacion_min_max_m": [
-        280.0,
-        1150.0
+        210.0,
+        938.7
       ],
-      "pendiente_media_deg": 24.5,
-      "pendiente_std_deg": 14.8,
-      "score_c4": 6.8,
-      "detalles": "Pendientes abruptas (>30°) en relieve montañoso, susceptible a artefactos de sombra."
+      "pendiente_media_deg": 10.7,
+      "pendiente_std_deg": 7.53,
+      "pendiente_util_pct": 35.0,
+      "score_c4": 4.15
     },
     "c5_grilla_ca": {
-      "aspect_ratio": "2.4:1 (quebradas estrechas)",
-      "score_c5": 7.0,
-      "detalles": "Foco segmentado por relieve montañoso, difícil de discretizar homogéneamente."
+      "focos_zona": 86,
+      "ancho_km": 30.61,
+      "alto_km": 23.13,
+      "aspect_ratio": 1.32,
+      "score_c5": 5.13
     }
   }
 }

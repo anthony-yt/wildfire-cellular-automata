@@ -1,20 +1,16 @@
 """Script de Evaluación Multicriterio para Selección del Caso de Estudio Real (Task 3.2).
-
 Evalúa cuantitativamente los 3 departamentos candidatos:
 - Ucayali
 - Madre de Dios
 - San Martín
-
-Integrando los 4 frentes de datos:
-- C1: NASA FIRMS (Task 1.1) - Peso 30%
-- C2: Viento ERA5 / OpenWeather (Task 1.2) - Peso 20%
-- C3: Vegetación ESA WorldCover 10m (Task 1.3) - Peso 20%
-- C4: DEM SRTM 30m Topografía (Task 1.4) - Peso 15%
-- C5: Idoneidad Grilla CA 50x50 (Task 3.2) - Peso 15%
+Integrando los 5 criterios:
+- C1: NASA FIRMS - Peso 30%
+- C2: Viento ERA5 / OpenWeather - Peso 20%
+- C3: Vegetación Dynamic World - Peso 20%
+- C4: DEM Copernicus GLO-30 - Peso 15%
+- C5: Idoneidad Grilla CA - Peso 15%
 """
-
 from __future__ import annotations
-
 import csv
 import json
 import math
@@ -40,8 +36,7 @@ CANDIDATES = {
         "focus_zone": "Pucallpa / Coronel Portillo / Nueva Requena",
         "focus_bbox": (-74.65, -8.45, -74.45, -8.30),
         "target_dates": ("2024-08-14", "2024-08-18"),
-        "vegetation_tile": "ESA_WorldCover_10m_2021_v200_S09W075_Map.tif",
-        "dem_file": "Pucallpa_SRTM_30m.tif",
+
     },
     "Madre de Dios": {
         "macro_bbox": (-72.5, -13.5, -68.6, -9.9),
@@ -49,8 +44,7 @@ CANDIDATES = {
         "focus_zone": "Puerto Maldonado / Tambopata / Tahuamanu",
         "focus_bbox": (-69.35, -12.70, -69.05, -12.45),
         "target_dates": ("2024-08-14", "2024-08-18"),
-        "vegetation_tile": "ESA_WorldCover_10m_2021_v200_S13W070_Map.tif",
-        "dem_file": "PuertoMaldonado_SRTM_30m.tif",
+
     },
     "San Martin": {
         "macro_bbox": (-78.0, -9.0, -75.5, -5.5),
@@ -58,8 +52,6 @@ CANDIDATES = {
         "focus_zone": "Huallaga Central / Picota / Bellavista",
         "focus_bbox": (-76.50, -7.20, -76.20, -6.90),
         "target_dates": ("2024-08-14", "2024-08-18"),
-        "vegetation_tile": "ESA_WorldCover_10m_2021_v200_S07W077_Map.tif",
-        "dem_file": "Tarapoto_SRTM_30m.tif",
     },
 }
 
@@ -108,8 +100,7 @@ def evaluar_focos_firms(firms_client: FIRMSClient, candidate_name: str, config: 
             source="VIIRS_SNPP_SP",
             date_str=start_date,
         )
-    except Exception as e:
-        print(f"[!] Error consultando FIRMS para {candidate_name}: {e}")
+    except Exception as e:raise RuntimeError(f"No se pudo obtener FIRMS para {candidate_name}: {e}" )
     
     total = len(points)
     conf_altas = sum(1 for p in points if p["confidence"] in ("h", "high") or (isinstance(p["confidence"], (int, float)) and p["confidence"] >= 80))
@@ -185,117 +176,217 @@ def evaluar_viento(weather_client: WeatherClient, candidate_name: str, config: D
 
 
 def evaluar_vegetacion(candidate_name: str, config: Dict[str, Any]) -> Dict[str, Any]:
-    """Evalúa el Criterio 3: Cobertura Vegetal ESA WorldCover 10m (Task 1.3 / Task 2.3)."""
-    # Si existe recorte local numpy para la región, derivar métricas directas
-    matriz_path = PROJECT_ROOT / "data" / "raw" / "vegetation" / f"{candidate_name.lower().replace(' ', '_')}_vegetacion_50x50.npy"
-    if candidate_name == "Ucayali" and not matriz_path.exists():
-        matriz_path = PROJECT_ROOT / "data" / "raw" / "vegetation" / "pucallpa_vegetacion_50x50.npy"
-    
-    if matriz_path.exists():
-        matriz_veg = np.load(matriz_path)
-        # Clases flamables ESA: 10: Bosque, 20: Matorral, 30: Pasto, 40: Cultivo
-        flamable_mask = np.isin(matriz_veg, [10, 20, 30, 40])
-        combustible_pct = round(float(np.mean(flamable_mask) * 100.0), 1)
-        agua_pct = round(float(np.mean(matriz_veg == 80) * 100.0), 1)
-        continuidad = round(float(combustible_pct / 100.0 * 0.98), 3)
-        resolucion_score = 9.8
-        c3_score = round(float(np.clip((combustible_pct / 100.0) * 7.0 + continuidad * 3.0, 1.0, 10.0)), 2)
-        detalles = (
-            f"Calculado directamente de matriz real ESA WorldCover ({matriz_path.name}): "
-            f"{combustible_pct}% biomasa flamable, {agua_pct}% barrera de agua (Río Ucayali), sin nubes."
+    """Evalúa el Criterio 3 usando cobertura vegetal de Dynamic World."""
+
+    # Archivo de vegetación correspondiente a cada candidato
+    archivos_vegetacion = {
+        "Ucayali": "ucayali_vegetacion_2024_50m.npy",
+        "Madre de Dios": "madre_de_dios_vegetacion_2024_50m.npy",
+        "San Martin": "san_martin_vegetacion_2024_50m.npy",
+        "San Martín": "san_martin_vegetacion_2024_50m.npy",
+    }
+
+    # Construimos la ruta al archivo .npy
+    matriz_path = (PROJECT_ROOT / "data"/ "raw"/ "vegetation"/ archivos_vegetacion[candidate_name] )
+
+    # Si no existe el archivo, detenemos la evaluación
+    if not matriz_path.exists():
+        raise FileNotFoundError(
+            f"No se encontró el archivo de vegetación: {matriz_path}"
         )
-    elif candidate_name == "Madre de Dios":
-        combustible_pct = 91.5
-        continuidad = 0.92
-        resolucion_score = 9.2
-        c3_score = 8.8
-        detalles = "Estimación derivada de exploraciones GEE: Bosque tropical denso y pasturas, mayor fragmentación por minería."
-    else:  # San Martín
-        combustible_pct = 82.0
-        continuidad = 0.78
-        resolucion_score = 8.5
-        c3_score = 7.5
-        detalles = "Estimación derivada de exploraciones GEE: Cobertura fragmentada por valles interandinos y mayor nubosidad."
-    
+
+    # Cargamos la matriz de vegetación
+    matriz_veg = np.load(matriz_path)
+
+    # Los píxeles con 255 representan zonas sin datos
+    validos = matriz_veg != 255
+    total_validos = validos.sum()
+
+    if total_validos == 0:
+        raise ValueError(
+            f"No hay píxeles válidos de vegetación para {candidate_name}"
+        )
+    # Dynamic World:
+    # 1 = árboles
+    # 2 = pasto
+    # 4 = cultivos
+    # 5 = matorral
+    combustible_mask = (
+        np.isin(matriz_veg, [1, 2, 4, 5])
+        & validos
+    )
+
+    # Porcentaje de cobertura combustible
+    combustible_pct = round(
+        float(combustible_mask.sum() / validos.sum() * 100),
+        2
+    )
+
+    # Dynamic World: 0 = agua
+    agua_mask = (matriz_veg == 0) & validos
+
+    # Porcentaje de agua
+    agua_pct = round(
+        float(agua_mask.sum() / validos.sum() * 100),
+        2
+    )
+
+    # Todos los píxeles excepto la última columna
+    izquierda = combustible_mask[:, :-1]
+
+    # Todos los píxeles excepto la primera columna
+    derecha = combustible_mask[:, 1:]
+
+    # True únicamente cuando ambos vecinos son combustibles: T -> T
+    conexiones_h = izquierda & derecha
+
+    # Cantidad de conexiones horizontales combustible-combustible
+    num_conexiones_h = np.sum(conexiones_h)
+
+    # Verificamos que el vecino derecho tenga información válida
+    derecha_valida = validos[:, 1:]
+
+    # Casos que empiezan en combustible y tienen un vecino válido
+    posibles_h = np.sum(izquierda & derecha_valida)
+
+    # Todas las filas excepto la última
+    arriba = combustible_mask[:-1, :]
+
+    # Todas las filas excepto la primera
+    abajo = combustible_mask[1:, :]
+
+    # True únicamente cuando ambos vecinos son combustibles
+    conexiones_v = arriba & abajo
+
+    # Cantidad de conexiones verticales combustible-combustible
+    num_conexiones_v = np.sum(conexiones_v)
+
+    # Verificamos que el vecino inferior tenga información válida
+    abajo_valido = validos[1:, :]
+
+    # Casos que empiezan en combustible y tienen un vecino inferior válido
+    posibles_v = np.sum(arriba & abajo_valido)
+
+    # Total de comparaciones que realmente podían evaluarse
+    total_posibles = posibles_h + posibles_v
+    continuidad = ((num_conexiones_h + num_conexiones_v) / total_posibles if total_posibles > 0 else 0.0
+)
+    continuidad = round(float(continuidad), 3)
+
+    # Puntaje del criterio C3
+    # 70% depende de cobertura combustible y 30% de continuidad
+    c3_score = round( float(np.clip((combustible_pct / 100.0) * 7.0 + continuidad * 3.0,1.0,10.0 )),2)
+
+    detalles = (
+        f"Calculado directamente de Dynamic World ({matriz_path.name}): "
+        f"{combustible_pct}% de cobertura combustible, "
+        f"{agua_pct}% de agua y continuidad {continuidad}."
+    )
+
     return {
         "combustible_flamable_pct": combustible_pct,
         "indice_continuidad": continuidad,
         "score_c3": c3_score,
         "detalles": detalles,
     }
-
-
 def evaluar_topografia_dem(candidate_name: str, config: Dict[str, Any]) -> Dict[str, Any]:
-    """Evalúa el Criterio 4: DEM SRTM 30m y Pendiente (Task 1.4 / Task 2.3)."""
-    dem_path = PROJECT_ROOT / "data" / "raw" / "dem" / f"{candidate_name.lower().replace(' ', '_')}_dem_50x50.npy"
-    if candidate_name == "Ucayali" and not dem_path.exists():
-        dem_path = PROJECT_ROOT / "data" / "raw" / "dem" / "pucallpa_dem_50x50.npy"
 
-    if dem_path.exists():
-        dem = np.load(dem_path)
-        elev_min = round(float(np.min(dem)), 1)
-        elev_max = round(float(np.max(dem)), 1)
-        rango_elevacion = (elev_min, elev_max)
-        
-        # Cálculo matemático de gradientes y pendiente a resolución de 30m
-        gy, gx = np.gradient(dem, 30.0, 30.0)
-        pend_mat = np.degrees(np.arctan(np.sqrt(gx**2 + gy**2)))
-        pendiente_media_deg = round(float(np.mean(pend_mat)), 2)
-        pendiente_std = round(float(np.std(pend_mat)), 2)
-        
-        # Pendientes moderadas (3°-12°) son ideales para autómata híbrido celular sin divergencia
-        c4_score = 9.2
-        detalles = (
-            f"Derivado directamente de DEM SRTM ({dem_path.name}): "
-            f"Elevación {elev_min}m-{elev_max}m, Pendiente media {pendiente_media_deg}° (±{pendiente_std}°)."
-        )
-    elif candidate_name == "Madre de Dios":
-        rango_elevacion = (185.0, 240.0)
-        pendiente_media_deg = 1.8
-        pendiente_std = 1.2
-        c4_score = 7.2
-        detalles = "Terreno casi plano (llanura aluvial amazónica). La pendiente casi no modula el avance del fuego."
-    else:  # San Martín
-        rango_elevacion = (280.0, 1150.0)
-        pendiente_media_deg = 24.5
-        pendiente_std = 14.8
-        c4_score = 6.8
-        detalles = "Pendientes abruptas (>30°) en relieve montañoso, susceptible a artefactos de sombra."
+    archivos_dem = {
+        "Ucayali": "ucayali_dem_50m.npy",
+        "Madre de Dios": "madre_de_dios_dem_50m.npy",
+        "San Martin": "san_martin_dem_50m.npy",
+    }
+
+    archivos_pendiente = {
+        "Ucayali": "ucayali_slope_deg_50m.npy",
+        "Madre de Dios": "madre_de_dios_slope_deg_50m.npy",
+        "San Martin": "san_martin_slope_deg_50m.npy",
+    }
+
+    dem_path = PROJECT_ROOT / "data" / "raw" / "dem" / archivos_dem[candidate_name]
+    slope_path = PROJECT_ROOT / "data" / "raw" / "dem" / archivos_pendiente[candidate_name]
+
+    dem = np.load(dem_path)
+    pendiente = np.load(slope_path)
+
+    elev_min = round(float(np.nanmin(dem)), 2)
+    elev_max = round(float(np.nanmax(dem)), 2)
+
+    pendiente_media = round(float(np.nanmean(pendiente)), 2)
+    pendiente_std = round(float(np.nanstd(pendiente)), 2)
+
+    # Porcentaje de terreno con pendiente moderada útil para el modelo
+    pendiente_util = (pendiente >= 3.0) & (pendiente <= 12.0)
+    pct_pendiente_util = float(np.mean(pendiente_util))
+
+    # Escala 1-10 directamente desde la proporción observada
+    c4_score = round(1.0 + 9.0 * pct_pendiente_util, 2)
 
     return {
-        "elevacion_min_max_m": rango_elevacion,
-        "pendiente_media_deg": pendiente_media_deg,
+        "elevacion_min_max_m": (elev_min, elev_max),
+        "pendiente_media_deg": pendiente_media,
         "pendiente_std_deg": pendiente_std,
+        "pendiente_util_pct": round(pct_pendiente_util * 100, 2),
         "score_c4": c4_score,
-        "detalles": detalles,
     }
+def evaluar_grilla_ca(
+    candidate_name: str,
+    config: Dict[str, Any],
+    firms_eval: Dict[str, Any]
+) -> Dict[str, Any]:
 
+    points = firms_eval["points"]
 
-def evaluar_grilla_ca(candidate_name: str, firms_eval: Dict[str, Any]) -> Dict[str, Any]:
-    """Evalúa el Criterio 5: Idoneidad para Grilla CA 50x50 / 100x100 (~2.5km a 5km)."""
-    total_focos = firms_eval["total_focos"]
-    clustering = firms_eval["clustering_index"]
-    
-    if candidate_name == "Ucayali":
-        # En Coronel Portillo / Nueva Requena los focos se concentran en un radio de 4km x 4km
-        c5_score = 9.4
-        aspect_ratio = "1:1 (cuadrática óptima)"
-        detalles = "Frentes de ignición que caben en una grilla de 50x50 con celdas de 50m a 80m."
-    elif candidate_name == "Madre de Dios":
-        c5_score = 8.5
-        aspect_ratio = "1.8:1 (lineal a lo largo de carretera)"
-        detalles = "Focos dispersos a lo largo de la vía Interoceánica. Tiende a escapar la sub-grilla."
-    else:  # San Martín
-        c5_score = 7.0
-        aspect_ratio = "2.4:1 (quebradas estrechas)"
-        detalles = "Foco segmentado por relieve montañoso, difícil de discretizar homogéneamente."
-    
+    west, south, east, north = config["focus_bbox"]
+
+    focos_zona = [
+        p for p in points
+        if west <= p["longitude"] <= east
+        and south <= p["latitude"] <= north
+    ]
+    if len(focos_zona) < 2:
+        return {
+            "focos_zona": len(focos_zona),
+            "ancho_km": None,
+            "alto_km": None,
+            "aspect_ratio": None,
+            "score_c5": 1.0,
+        }
+    lats = np.array([p["latitude"] for p in focos_zona])
+    lons = np.array([p["longitude"] for p in focos_zona])
+    lat_media = float(np.mean(lats))
+
+    alto_km = (np.max(lats) - np.min(lats)) * 111.32
+
+    ancho_km = (
+        (np.max(lons) - np.min(lons))
+        * 111.32
+        * np.cos(np.radians(lat_media))
+    )
+
+    lado_mayor = max(ancho_km, alto_km)
+    lado_menor = min(ancho_km, alto_km)
+
+    aspect_ratio = lado_mayor / lado_menor if lado_menor > 0 else 999
+
+    # 1 cuando la forma es cuadrada, disminuye al hacerse alargada
+    score_forma = 1.0 / aspect_ratio
+
+    # Plan original: subgrilla ajustada de aproximadamente 5 km
+    score_contencion = min(1.0, 5.0 / lado_mayor)
+
+    # Ambos aspectos son necesarios para que la grilla sea adecuada
+    indice_grilla = (score_forma + score_contencion) / 2.0
+
+    c5_score = round(1.0 + 9.0 * indice_grilla, 2)
+
     return {
-        "aspect_ratio": aspect_ratio,
+        "focos_zona": len(focos_zona),
+        "ancho_km": round(float(ancho_km), 2),
+        "alto_km": round(float(alto_km), 2),
+        "aspect_ratio": round(float(aspect_ratio), 2),
         "score_c5": c5_score,
-        "detalles": detalles,
     }
-
 
 def main():
     print("=" * 80)
@@ -322,10 +413,9 @@ def main():
         dem_res = evaluar_topografia_dem(cand_name, config)
         print(f"    - C4 (DEM/Topografía): Pendiente {dem_res['pendiente_media_deg']}° (±{dem_res['pendiente_std_deg']}°) | Score: {dem_res['score_c4']}/10")
         
-        ca_res = evaluar_grilla_ca(cand_name, firms_res)
-        print(f"    - C5 (Grilla CA 50x50): {ca_res['aspect_ratio']} | Score: {ca_res['score_c5']}/10")
-        
-        # Ponderación
+        ca_res = evaluar_grilla_ca(cand_name, config, firms_res)
+        print( f"    - C5 (Grilla CA): "f"{ca_res['focos_zona']} focos en zona focal | "f"Extensión: {ca_res['ancho_km']} x {ca_res['alto_km']} km | "f"Aspect ratio: {ca_res['aspect_ratio']}")
+         # Ponderación
         puntaje_total = (
             firms_res["score_c1"] * PESOS["C1_firms"]
             + viento_res["score_c2"] * PESOS["C2_viento"]
@@ -334,8 +424,7 @@ def main():
             + ca_res["score_c5"] * PESOS["C5_grilla_ca"]
         )
         puntaje_total = round(puntaje_total, 2)
-        print(f"    ===> PUNTAJE TOTAL PONDERADO: {puntaje_total} / 10.0")
-        
+        print(f"    ===> PUNTAJE TOTAL: {puntaje_total}/10")
         resultados[cand_name] = {
             "config": config,
             "c1": firms_res,
@@ -345,32 +434,34 @@ def main():
             "c5": ca_res,
             "puntaje_total": puntaje_total,
         }
-    
-    # Determinar ganador
-    ganador_name = max(resultados.keys(), key=lambda k: resultados[k]["puntaje_total"])
+    # Determinar ganador después de evaluar los 3 candidatos
+    ganador_name = max(
+        resultados.keys(),
+        key=lambda k: resultados[k]["puntaje_total"]
+    )
     ganador_data = resultados[ganador_name]
-    
     print("\n" + "=" * 80)
-    print(f" CANDIDATO GANADOR SELECCIONADO: {ganador_name.upper()} (Puntaje: {ganador_data['puntaje_total']} / 10.0)")
+    print(
+        f" CANDIDATO GANADOR: {ganador_name.upper()} "
+        f"({ganador_data['puntaje_total']}/10)"
+    )
     print("=" * 80)
-    
     # Tabla comparativa Markdown
     print("\n### TABLA COMPARATIVA DE PUNTUACIONES MULTICRITERIO ###\n")
     header = "| Criterio | Peso | " + " | ".join(resultados.keys()) + " | Indicador Clave |"
     sep = "| :--- | :---: | " + " | ".join([":---:" for _ in resultados]) + " | :--- |"
     print(header)
     print(sep)
-    
     c1_row = f"| **C1: Focos NASA FIRMS** | 30% | " + " | ".join([f"{resultados[k]['c1']['score_c1']} ({resultados[k]['c1']['total_focos']} focos)" for k in resultados]) + " | Densidad, FRP y clustering continuo |"
     c2_row = f"| **C2: Viento ERA5** | 20% | " + " | ".join([f"{resultados[k]['c2']['score_c2']} ({resultados[k]['c2']['vel_media_ms']} m/s)" for k in resultados]) + " | Disponibilidad horaria y consistencia |"
-    c3_row = f"| **C3: Vegetación ESA** | 20% | " + " | ".join([f"{resultados[k]['c3']['score_c3']}" for k in resultados]) + " | Biomasa 10m y continuidad combustible |"
-    c4_row = f"| **C4: Topografía DEM** | 15% | " + " | ".join([f"{resultados[k]['c4']['score_c4']} ({resultados[k]['c4']['pendiente_media_deg']}°)" for k in resultados]) + " | Gradiente sin artefactos de sombra |"
-    c5_row = f"| **C5: Grilla CA 50x50** | 15% | " + " | ".join([f"{resultados[k]['c5']['score_c5']}" for k in resultados]) + " | Contención espacial y aspecto 1:1 |"
-    tot_row = f"| **PUNTAJE FINAL** | **100%** | " + " | ".join([f"**{resultados[k]['puntaje_total']}**" for k in resultados]) + " | **Ponderación ponderada normalizada** |"
-    
+    c3_row = f"| **C3: Vegetación Dynamic World** | 20% | " + " | ".join([f"{resultados[k]['c3']['score_c3']}" for k in resultados]) + " | Cobertura combustible y continuidad |"
+    c4_row = (
+    "| **C4: Topografía Copernicus DEM** | 15% | "+ " | ".join([f"{resultados[k]['c4']['pendiente_media_deg']}°"for k in resultados ])+ " | Pendiente obtenida del DEM real |")
+    c5_row = ( "| **C5: Grilla CA** | 15% | "+ " | ".join([ f"{resultados[k]['c5']['focos_zona']} focos - " f"{resultados[k]['c5']['ancho_km']}x{resultados[k]['c5']['alto_km']} km" for k in resultados ])  + " | Extensión espacial de detecciones FIRMS |")
+    tot_row = ("| **PUNTAJE FINAL** | **100%** | "+" | ".join([f"**{resultados[k]['puntaje_total']}**"for k in resultados])+ " | Puntaje ponderado final |")
     for row in [c1_row, c2_row, c3_row, c4_row, c5_row, tot_row]:
         print(row)
-    
+
     # Guardar datos crudos para el caso ganador
     print("\n[*] Extrayendo y guardando datos crudos del incendio seleccionado...")
     
@@ -384,21 +475,21 @@ def main():
         if west <= p["longitude"] <= east and south <= p["latitude"] <= north
     ]
     
-    # Si la sub-ventana contiene pocos puntos en el corte exacto, ampliar margen de búsqueda (~0.3°)
-    if len(selected_focos) < 5:
-        margin = 0.25
-        selected_focos = [
-            p for p in all_points
-            if (west - margin) <= p["longitude"] <= (east + margin) and (south - margin) <= p["latitude"] <= (north + margin)
-        ]
-    
-    # Si aún no hay suficientes en tiempo real, usar los focos más densos de Ucayali
+    # Si aún no hay suficientes, usar los primeros focos disponibles del candidato ganador
     if len(selected_focos) < 5:
         selected_focos = all_points[:35]
-    
-    # Asignar IDs únicos normalizados para trazabilidad
+
+    prefijos = {
+        "Ucayali": "UCY",
+        "Madre de Dios": "MDD",
+        "San Martin": "SM",
+    }
+
+    prefijo = prefijos[ganador_name]
+
+    # Asignar IDs únicos
     for idx, p in enumerate(selected_focos, start=1):
-        p["fire_id"] = f"FIRMS-UCY-2024-{idx:04d}"
+        p["fire_id"] = f"FIRMS-{prefijo}-2024-{idx:04d}"
     
     # 1. Guardar CSV de FIRMS
     raw_firms_dir = PROJECT_ROOT / "data" / "raw" / "firms"
@@ -430,25 +521,21 @@ def main():
     raw_veg_dir.mkdir(parents=True, exist_ok=True)
     veg_metadata_file = raw_veg_dir / "vegetacion_caso_estudio_metadata.json"
     veg_meta = {
-        "dataset": "ESA WorldCover 10m (v200 - 2021)",
-        "source": "European Space Agency (ESA) via AWS / Earthdata",
+        "dataset": "Dynamic World",
+        "source": "Google Earth Engine",
         "region": ganador_name,
-        "tile": ganador_data["config"]["vegetation_tile"],
         "bounding_box_subwindow": list(focus_bbox),
-        "spatial_resolution_m": 10.0,
-        "crs": "EPSG:4326",
+        "spatial_resolution_m": 50.0,
         "flammable_classes": {
-            "10": "Tree cover (Bosque Húmedo)",
-            "20": "Shrubland (Matorral/Purma)",
-            "30": "Grassland (Pastizales)",
-            "40": "Cropland (Cultivos/Rastrojo)",
+            "1": "Arboles",
+            "2": "Pasto",
+            "4": "Cultivos",
+            "5": "Matorral",
         },
-        "barrier_classes": {
-            "50": "Built-up (Caminos/Zonas urbanas)",
-            "80": "Permanent water bodies (Ríos y lagos)",
+        "water_class": {
+            "0": "Agua"
         },
         "flammable_biomass_pct": ganador_data["c3"]["combustible_flamable_pct"],
-        "notebook_reference": "notebooks/exploracion_vegetacion_ESA_ipyn.ipynb",
     }
     with open(veg_metadata_file, "w", encoding="utf-8") as f:
         json.dump(veg_meta, f, indent=2, ensure_ascii=False)
@@ -458,20 +545,16 @@ def main():
     raw_dem_dir.mkdir(parents=True, exist_ok=True)
     dem_metadata_file = raw_dem_dir / "dem_caso_estudio_metadata.json"
     dem_meta = {
-        "dataset": "SRTM 30m 1 Arc-Second Global (NASA/USGS)",
-        "source": "NASA Earthdata via elevation python library",
+        "dataset": "Copernicus DEM GLO-30",
+        "source": "Google Earth Engine",
         "region": ganador_name,
-        "file": ganador_data["config"]["dem_file"],
         "bounding_box_subwindow": list(focus_bbox),
-        "spatial_resolution_m": 30.0,
-        "crs": "EPSG:4326",
+        "spatial_resolution_m": 50.0,
         "elevation_min_m": ganador_data["c4"]["elevacion_min_max_m"][0],
         "elevation_max_m": ganador_data["c4"]["elevacion_min_max_m"][1],
         "mean_slope_deg": ganador_data["c4"]["pendiente_media_deg"],
         "std_slope_deg": ganador_data["c4"]["pendiente_std_deg"],
-        "nodata_value": -32768.0,
-        "notebook_reference": "notebooks/exploracion_SRTM_dem.ipynb",
-    }
+        }
     with open(dem_metadata_file, "w", encoding="utf-8") as f:
         json.dump(dem_meta, f, indent=2, ensure_ascii=False)
     print(f"[OK] Metadatos de topografía DEM guardados en:\n     {dem_metadata_file}")
@@ -490,13 +573,9 @@ def main():
             "c4_dem": v["c4"],
             "c5_grilla_ca": v["c5"],
         }
-    
     with open(eval_summary_file, "w", encoding="utf-8") as f:
         json.dump(clean_resultados, f, indent=2, ensure_ascii=False)
-    print(f"[OK] Resumen comparativo guardado en:\n     {eval_summary_file}")
-    
-    print("\n[SUCCESS] Evaluación completada con éxito.")
-
-
+    print(f"Resumen comparativo guardado en:\n     {eval_summary_file}")
+    print("\nEvaluación completada con éxito.")
 if __name__ == "__main__":
     main()

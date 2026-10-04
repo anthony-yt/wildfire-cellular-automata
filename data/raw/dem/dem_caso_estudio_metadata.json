@@ -1,20 +1,16 @@
 {
-  "dataset": "SRTM 30m 1 Arc-Second Global (NASA/USGS)",
-  "source": "NASA Earthdata via elevation python library",
-  "region": "Ucayali",
-  "file": "Pucallpa_SRTM_30m.tif",
+  "dataset": "Copernicus DEM GLO-30",
+  "source": "Google Earth Engine",
+  "region": "Madre de Dios",
   "bounding_box_subwindow": [
-    -74.65,
-    -8.45,
-    -74.45,
-    -8.3
+    -69.35,
+    -12.7,
+    -69.05,
+    -12.45
   ],
-  "spatial_resolution_m": 30.0,
-  "crs": "EPSG:4326",
-  "elevation_min_m": 142.6,
-  "elevation_max_m": 207.5,
-  "mean_slope_deg": 4.76,
-  "std_slope_deg": 2.08,
-  "nodata_value": -32768.0,
-  "notebook_reference": "notebooks/exploracion_SRTM_dem.ipynb"
+  "spatial_resolution_m": 50.0,
+  "elevation_min_m": 164.0,
+  "elevation_max_m": 278.27,
+  "mean_slope_deg": 4.55,
+  "std_slope_deg": 3.42
 }
