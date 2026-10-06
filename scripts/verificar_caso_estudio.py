@@ -17,6 +17,8 @@ _ICONOS = {OK: "[OK]", ADVERTENCIA: "[ADVERTENCIA]", FALLA: "[FALLA]"}
 TOLERANCIA_TOTAL = 0.006
 TOLERANCIA_SUBPUNTAJE = 0.02
 
+DESCRIPCION = "Verificación cruzada del caso de estudio contra los datos del repositorio."
+
 @dataclass
 class Resultado:
     chequeo: str
@@ -353,6 +355,60 @@ def verificar_puntajes(resumen: dict, pesos: Dict[int, float], puntajes_doc: Lis
     ))
     return resultados
 
+# Coherencia entre el caso declarado, la matriz y los archivos del caso seleccionado
+
+_METADATOS_CASO = (
+    "data/raw/vegetation/vegetacion_caso_estudio_metadata.json",
+    "data/raw/dem/dem_caso_estudio_metadata.json",
+)
+
+def leer_departamento_declarado(texto_md: str) -> Optional[str]:
+    for linea in texto_md.splitlines():
+        celdas = [c.strip(" *`") for c in linea.strip().strip("|").split("|")]
+        if len(celdas) >= 2 and celdas[0] == "Departamento" and celdas[1]:
+            return celdas[1]
+    return None
+
+def verificar_caso_declarado(repo: Path, texto_doc: str, resumen: dict) -> List[Resultado]:
+    etiqueta = "4a. Caso declarado vs. candidato con mayor puntaje"
+    declarado = leer_departamento_declarado(texto_doc)
+    if declarado is None:
+        return [Resultado(etiqueta, ADVERTENCIA, "el documento no tiene la fila 'Departamento'")]
+
+    resultados = []
+    orden = sorted(resumen, key=lambda c: resumen[c]["puntaje_total"], reverse=True)
+    nombres = [normalizar(c) for c in orden]
+    ranking = "Orden por puntaje: " + " > ".join(f"{c} {resumen[c]['puntaje_total']}" for c in orden)
+    if normalizar(declarado) not in nombres:
+        resultados.append(Resultado(etiqueta, FALLA, f"{declarado} no está entre los candidatos evaluados", [ranking]))
+    else:
+        puesto = nombres.index(normalizar(declarado)) + 1
+        detalles = [ranking]
+        if puesto > 1:
+            diferencia = resumen[orden[0]]["puntaje_total"] - resumen[orden[puesto - 1]]["puntaje_total"]
+            detalles.append(f"{declarado} queda a {diferencia:.2f} puntos de {orden[0]}")
+        resultados.append(Resultado(
+            etiqueta,
+            OK if puesto == 1 else FALLA,
+            f"el documento declara {declarado}; la matriz lo deja en el puesto {puesto} de {len(orden)}",
+            detalles,
+        ))
+
+    regiones = {}
+    for ruta_rel in _METADATOS_CASO:
+        ruta = repo / ruta_rel
+        if ruta.exists():
+            regiones[ruta.name] = str(json.loads(ruta.read_text(encoding="utf-8")).get("region", ""))
+    if regiones:
+        coinciden = sum(normalizar(region) == normalizar(declarado) for region in regiones.values())
+        resultados.append(Resultado(
+            "4b. Región de los archivos del caso seleccionado",
+            OK if coinciden == len(regiones) else FALLA,
+            f"{coinciden}/{len(regiones)} archivos de metadatos corresponden a {declarado}",
+            [f"{nombre}: region = {region or '(sin dato)'}" for nombre, region in regiones.items()],
+        ))
+    return resultados
+
 # Ejecución y reporte
 
 def verificar(repo: Path) -> List[Resultado]:
@@ -364,7 +420,8 @@ def verificar(repo: Path) -> List[Resultado]:
     return (verificar_fechas(repo, texto_doc)
             + verificar_respaldo_geoespacial(repo, candidatos)
             + verificar_datos_reales_vs_reportados(repo, resumen, candidatos)
-            + verificar_puntajes(resumen, leer_pesos_plan(texto_plan), leer_puntajes_doc(texto_doc)))
+            + verificar_puntajes(resumen, leer_pesos_plan(texto_plan), leer_puntajes_doc(texto_doc))
+            + verificar_caso_declarado(repo, texto_doc, resumen))
 
 def formatear(resultados: List[Resultado], markdown: bool) -> str:
     lineas = []
@@ -387,7 +444,7 @@ def formatear(resultados: List[Resultado], markdown: bool) -> str:
     return "\n".join(lineas)
 
 def main(argv: Optional[List[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=DESCRIPCION)
     parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[1],
                         help="raíz del repositorio (por defecto, la carpeta padre de scripts/)")
     parser.add_argument("--markdown", action="store_true", help="imprime el reporte en Markdown")

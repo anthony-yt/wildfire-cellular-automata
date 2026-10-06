@@ -1,5 +1,7 @@
 import csv
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -29,6 +31,7 @@ PLAN = """
 """
 
 DOC = """
+| **Departamento** | **Ucayali** |
 | **Bounding Box Ajustado (Sub-window CA)** | `[-74.6500, -8.4500, -74.4500, -8.3000]` |
 | **Rango de Fechas del Incendio** | **2024-08-14** a **2024-08-18** (ventana) |
 | **PUNTAJE FINAL PONDERADO** | **100%** | **7.87 / 10.0** | **7.60 / 10.0** |
@@ -185,3 +188,51 @@ def test_candidato_sin_fila_en_el_csv_real_da_advertencia(tmp_path):
     combustible = next(r for r in verificar(repo) if r.chequeo.startswith("2f."))
     assert combustible.estado == ADVERTENCIA
     assert any("sin fila" in d for d in combustible.detalles)
+
+def test_caso_declarado_que_ya_no_tiene_el_mayor_puntaje(tmp_path):
+    repo = _crear_repo(tmp_path)
+    (repo / "data/processed/evaluacion_multicriterio_resumen.json").write_text(json.dumps({
+        "Ucayali": _candidato(clustering=0.5, c1=7.0, total=7.60),
+        "Madre de Dios": _candidato(clustering=0.8, c1=7.9, total=7.87),
+    }), encoding="utf-8")
+    declarado = next(r for r in verificar(repo) if r.chequeo.startswith("4a."))
+    assert declarado.estado == FALLA
+    assert "puesto 2 de 2" in declarado.resumen
+    assert any("Madre de Dios 7.87 > Ucayali 7.6" in d for d in declarado.detalles)
+
+def test_archivos_del_caso_seleccionado_de_otra_region(tmp_path):
+    repo = _crear_repo(tmp_path)
+    (repo / "data/raw/dem/dem_caso_estudio_metadata.json").write_text(
+        json.dumps({"region": "Madre de Dios"}), encoding="utf-8")
+    (repo / "data/raw/vegetation/vegetacion_caso_estudio_metadata.json").write_text(
+        json.dumps({"region": "Ucayali"}), encoding="utf-8")
+    archivos = next(r for r in verificar(repo) if r.chequeo.startswith("4b."))
+    assert archivos.estado == FALLA
+    assert archivos.resumen.startswith("1/2 ")
+
+def test_sin_archivos_del_caso_seleccionado_no_se_agrega_el_chequeo(tmp_path):
+    repo = _crear_repo(tmp_path)
+    assert not any(r.chequeo.startswith("4b.") for r in verificar(repo))
+
+def test_documento_sin_departamento_da_advertencia(tmp_path):
+    repo = _crear_repo(tmp_path)
+    (repo / "docs" / "caso_de_estudio.md").write_text(
+        DOC.replace("| **Departamento** | **Ucayali** |\n", ""), encoding="utf-8")
+    declarado = next(r for r in verificar(repo) if r.chequeo.startswith("4a."))
+    assert declarado.estado == ADVERTENCIA
+
+def test_la_ayuda_no_depende_del_docstring_del_modulo(capsys, monkeypatch):
+    import scripts.verificar_caso_estudio as modulo
+    monkeypatch.setattr(modulo, "__doc__", None)
+    with pytest.raises(SystemExit) as salida:
+        modulo.main(["--help"])
+    assert salida.value.code == 0
+    assert "--markdown" in capsys.readouterr().out
+
+def test_corre_como_script_desde_la_terminal(tmp_path):
+    repo = _crear_repo(tmp_path)
+    script = Path(__file__).resolve().parents[1] / "scripts" / "verificar_caso_estudio.py"
+    proceso = subprocess.run([sys.executable, str(script), "--repo", str(repo)],
+                             capture_output=True, text=True, encoding="utf-8")
+    assert proceso.returncode == 0, proceso.stderr
+    assert "Resumen: " in proceso.stdout
