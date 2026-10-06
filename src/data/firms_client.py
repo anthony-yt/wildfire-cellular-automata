@@ -25,7 +25,9 @@ FIRMS_API_BASE_URL = "https://firms.modaps.eosdis.nasa.gov/api/area"
 # Fuentes satelitales soportadas por NASA FIRMS
 VALID_SOURCES = [
     "VIIRS_SNPP_NRT",
+    "VIIRS_SNPP_SP",
     "VIIRS_NOAA20_NRT",
+    "VIIRS_NOAA20_SP",
     "VIIRS_NOAA21_NRT",
     "MODIS_NRT",
     "MODIS_SP",

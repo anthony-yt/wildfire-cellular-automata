@@ -13,8 +13,17 @@ VECINOS = [
     (-1, 1), (-1, -1), (1, 1), (1, -1),
 ]
 
+# Constante de sensibilidad a la pendiente (Alexandridis et al., 2008; Freire, 2019)
+DEFAULT_AS = 0.078
+
+
 def _desplazar_vecino(matriz: np.ndarray, df: int, dc: int) -> np.ndarray:
-    """Desplaza una matriz 2D en (df, dc) anulando las fronteras envueltas por np.roll."""
+    """Desplaza una matriz 2D en (df, dc) anulando las fronteras envueltas por np.roll.
+
+    Elimina la condición de frontera toroidal periódica, garantizando que
+    el fuego en un borde no cruce al extremo opuesto de la grilla.
+    """
+
     vecina = np.roll(matriz, shift=(df, dc), axis=(0, 1))
     if df == 1:
         vecina[0, :] = False
@@ -37,7 +46,7 @@ class Grid:
 
         self.estado = np.full((tamano, tamano), SANA, dtype=np.int8)
 
-        # Vegetación y pendiente sintéticas (todavía no tenemos los datos reales)
+        # Vegetación y pendiente
         self.vegetacion = np.random.uniform(0, 1, (tamano, tamano))
         self.pendiente = np.random.uniform(0, 1, (tamano, tamano))
 
@@ -56,7 +65,9 @@ class Grid:
         self.estado[fila, columna] = AGUA
 
     def _vecinas_quemandose(self):
-        # Desplazamos el grid para cada vecino y vemos si hay fuego sin bucles por celda.
+        # Desplazamos el grid para cada vecino y verificamos si hay fuego
+        # anulando las fronteras para evitar el wrap toroidal de np.roll.
+
         quemandose = (self.estado == QUEMANDOSE)
         hay_vecina_en_llamas = np.zeros_like(quemandose)
 
@@ -65,9 +76,12 @@ class Grid:
 
         return hay_vecina_en_llamas
 
-    def paso_tiempo(self, campo_viento=None, formulacion=None):
+    def paso_tiempo(self, campo_viento=None, formulacion=None, as_slope=DEFAULT_AS):
         sanas = (self.estado == SANA)
         quemandose = (self.estado == QUEMANDOSE)
+
+        # Modulación por pendiente (Alexandridis et al., 2008: exp(as * slope_deg))
+        factor_pendiente = np.exp(as_slope * self.pendiente) if getattr(self, 'pendiente', None) is not None else 1.0
 
         if formulacion is not None:
             prob_total = np.clip(formulacion.probabilidad_ignicion(self, campo_viento), 0.0, 1.0)
@@ -75,13 +89,13 @@ class Grid:
             se_enciende = sanas & (tiradas < prob_total)
         elif campo_viento is None:
             vecina_en_llamas = self._vecinas_quemandose()
-            probabilidad = self.vegetacion * self.prob_ignicion_base
+            probabilidad = np.clip(self.vegetacion * self.prob_ignicion_base * factor_pendiente, 0.0, 1.0)
             tiradas = np.random.uniform(0, 1, self.estado.shape)
             se_enciende = sanas & vecina_en_llamas & (tiradas < probabilidad)
         else:
             # Probabilidad de ignición combinada considerando la dirección y factor de cada vecino
             prob_no_enciende = np.ones_like(self.vegetacion)
-            prob_base = np.clip(self.vegetacion * self.prob_ignicion_base, 0.0, 1.0)
+            prob_base = np.clip(self.vegetacion * self.prob_ignicion_base * factor_pendiente, 0.0, 1.0)
 
             for df, dc in VECINOS:
                 vecina = _desplazar_vecino(quemandose, df, dc)

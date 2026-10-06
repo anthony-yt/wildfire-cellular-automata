@@ -20,30 +20,30 @@ La matriz cuantitativa arrojó los siguientes resultados (escala normalizada de 
 
 | Criterio de Evaluación | Peso (%) | Ucayali (Candidato A) | Madre de Dios (Candidato B) | San Martín (Candidato C) | Indicador Clave de Medición |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| **C1: Focos NASA FIRMS** | **30%** | **8.36** *(1,133 focos)* | **8.36** *(671 focos)* | **8.14** *(508 focos)* | Densidad de detecciones, FRP medio/máx y clustering continuo |
+| **C1: Focos NASA FIRMS** | **30%** | **8.63** *(2,974 focos)* | **8.69** *(1,124 focos)* | **8.62** *(1,433 focos)* | Densidad de detecciones, FRP medio/máx y clustering continuo |
 | **C2: Viento ERA5 / Reanálisis** | **20%** | **7.38** *(1.25 m/s, 100%)* | **8.54** *(1.55 m/s, 100%)* | **7.40** *(1.33 m/s, 100%)* | Serie horaria completa 72h-120h y vector direccional |
-| **C3: Vegetación ESA WorldCover** | **20%** | **9.50** *(94.2% combustible)* | **8.80** *(91.5% combustible)* | **7.50** *(82.0% combustible)* | Resolución 10m, biomasa arbórea/purma y barreras hídricas |
-| **C4: Topografía DEM SRTM** | **15%** | **9.20** *(Pendiente 5.8° ± 3.6°)* | **7.20** *(Pendiente 1.8° ± 1.2°)* | **6.80** *(Pendiente 24.5° ± 14.8°)* | Micro-relieve ondulado sin distorsión extrema de pendiente |
+| **C3: Vegetación ESA WorldCover** | **20%** | **9.13** *(91.8% combustible)* | **8.80** *(91.5% combustible)* | **7.50** *(82.0% combustible)* | Resolución 10m, biomasa arbórea/purma y barrera fluvial (6.0%) |
+| **C4: Topografía DEM SRTM** | **15%** | **9.20** *(Pendiente 4.76° ± 2.08°)* | **7.20** *(Pendiente 1.8° ± 1.2°)* | **6.80** *(Pendiente 24.5° ± 14.8°)* | Micro-relieve ondulado sin distorsión extrema de pendiente |
 | **C5: Grilla CA (50x50 / 100x100)** | **15%** | **9.40** *(Aspecto 1:1)* | **8.50** *(Aspecto 1.8:1)* | **7.00** *(Aspecto 2.4:1)* | Contención del frente de fuego en sub-grilla discreta |
-| **PUNTAJE FINAL PONDERADO** | **100%** | 🏆 **8.67 / 10.0** | **8.33 / 10.0** | **7.49 / 10.0** | **Puntaje Global Multicriterio** |
+| **PUNTAJE FINAL PONDERADO** | **100%** | 🏆 **8.68 / 10.0** | **8.43 / 10.0** | **7.64 / 10.0** | **Puntaje Global Multicriterio** |
 
 ---
 
 ### Justificación Detallada de la Selección de Ucayali frente a los demás candidatos:
 
 1. **Mayor Densidad y Severidad de Focos de Calor:**
-   - Ucayali registró **1,133 focos de calor** en el período de análisis, superando por **68.8%** a Madre de Dios (671 focos) y por **123.0%** a San Martín (508 focos).
-   - Su potencia radiativa media ($FRP = 14.46\text{ MW}$) y máxima superan los $200\text{ MW}$, evidenciando frentes de fuego vigorosos y extendidos.
-   - Presenta un índice de agrupamiento espacial (*clustering index*) de **0.86**, lo que significa que los puntos forman frentes continuos de avance ideales para el autómata celular, en lugar de detecciones aisladas dispersas.
+   - Ucayali registró **2,974 focos de calor** en el período de análisis histórico (14 al 18 de agosto de 2024), superando por **164.6%** a Madre de Dios (1,124 focos) y por **107.5%** a San Martín (1,433 focos).
+   - Su potencia radiativa media ($FRP = 9.55\text{ MW}$) y máxima superan los $200\text{ MW}$, evidenciando frentes de fuego vigorosos y extendidos.
+   - Presenta un índice de agrupamiento espacial (*clustering index*) de **0.88**, lo que significa que los puntos forman frentes continuos de avance ideales para el autómata celular, en lugar de detecciones aisladas dispersas.
 
 2. **Alineación Total con los Productos Geoespaciales Fusionados (Ramas Integrante 2):**
-   - En el notebook [`notebooks/exploracion_vegetacion_ESA_ipyn.ipynb`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/notebooks/exploracion_vegetacion_ESA_ipyn.ipynb), el equipo procesó y validó el mosaico **ESA WorldCover 10m tile `S09W075`** enfocado exactamente en Pucallpa / Coronel Portillo, certificando la dominancia de cobertura arbórea inflamable (Clase 10) y matorrales (Clase 20) delimitados por el río Ucayali (Clase 80).
-   - En el notebook [`notebooks/exploracion_SRTM_dem.ipynb`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/notebooks/exploracion_SRTM_dem.ipynb), se recortó y calibró el modelo digital de elevación **`Pucallpa_SRTM_30m.tif`** en las coordenadas exactas `(-74.65, -8.45, -74.45, -8.30)`.
+   - En el notebook [`notebooks/exploracion_vegetacion_ESA_ipyn.ipynb`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/notebooks/exploracion_vegetacion_ESA_ipyn.ipynb), el equipo procesó el mosaico **ESA WorldCover 10m tile `S09W075`** enfocado en Pucallpa / Coronel Portillo, respaldado localmente en [`data/raw/vegetation/pucallpa_vegetacion_50x50.npy`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/data/raw/vegetation/pucallpa_vegetacion_50x50.npy) con 91.8% de biomasa inflamable y el cauce del río Ucayali (Clase 80) actuando como barrera hídrica incombustible.
+   - En el notebook [`notebooks/exploracion_SRTM_dem.ipynb`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/notebooks/exploracion_SRTM_dem.ipynb), se calibró el modelo digital de elevación **`Pucallpa_SRTM_30m.tif`**, respaldado localmente en [`data/raw/dem/pucallpa_dem_50x50.npy`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/data/raw/dem/pucallpa_dem_50x50.npy).
 
 3. **Gradiente Topográfico Óptimo para el Modelo Físico:**
    - **Frente a Madre de Dios:** Madre de Dios es una llanura aluvial casi perfectamente plana (pendiente media de apenas $1.8^\circ \pm 1.2^\circ$), lo cual anula la posibilidad de verificar la influencia de la pendiente en la propagación del fuego.
    - **Frente a San Martín:** San Martín tiene pendientes excesivamente abruptas ($24.5^\circ \pm 14.8^\circ$, con quebradas de $>40^\circ$) que generan sombras topográficas en rasters satelitales e inestabilidades de divergencia numérica en autómatas celulares en etapas tempranas.
-   - **Ucayali** presenta la condición ideal: un terreno suavemente ondulado con pendientes moderadas ($5.8^\circ \pm 3.6^\circ$, rango de $3^\circ$ a $12^\circ$), permitiendo evaluar simultáneamente el empuje del viento y la aceleración por pendiente de manera controlada.
+   - **Ucayali** presenta la condición ideal: un terreno suavemente ondulado con pendientes moderadas ($4.76^\circ \pm 2.08^\circ$), permitiendo evaluar simultáneamente el empuje del viento y la aceleración por pendiente de manera controlada sin explosión de gradientes.
 
 ---
 
@@ -59,27 +59,27 @@ La matriz cuantitativa arrojó los siguientes resultados (escala normalizada de 
 | **Coordenadas Centroides del Incendio** | Latitud: `-8.3833° S`, Longitud: `-74.5500° W` |
 | **Extensión Aproximada** | $\approx 22.2\text{ km} \times 16.6\text{ km}$ (macro-área) / sub-grilla local de $2.5\text{ km} \times 2.5\text{ km}$ |
 | **Rango de Fechas del Incendio** | **2024-08-14** a **2024-08-18** (Ventana histórica crítica de 120 horas continuas) |
-| **Sensor Satelital** | **VIIRS 375m** (Suomi-NPP / NOAA-20) vía NASA FIRMS |
+| **Sensor Satelital** | **VIIRS 375m** (Suomi-NPP Standard Processing Archive) vía NASA FIRMS |
 | **Archivo Local de Focos Crudos** | [`data/raw/firms/firms_caso_estudio_seleccionado.csv`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/data/raw/firms/firms_caso_estudio_seleccionado.csv) |
 | **Archivo Local de Viento Crudo** | [`data/raw/weather/weather_caso_estudio_seleccionado.json`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/data/raw/weather/weather_caso_estudio_seleccionado.json) |
 
 ### Listado Muestra de Detecciones e IDs de Focos de Calor FIRMS
 
-Se extrajeron y aislaron **37 detecciones activas** dentro del área de estudio con trazabilidad formal mediante identificadores normalizados:
+Se extrajeron y aislaron **21 detecciones activas** dentro del área focal de estudio con trazabilidad formal mediante identificadores normalizados:
 
 | Fire ID | Latitud (°S) | Longitud (°W) | Fecha / Hora (UTC) | Satélite | Confianza | FRP (MW) | Temp. Brillo (K) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| `FIRMS-UCY-2024-0001` | `-8.6351` | `-74.8912` | `2024-08-15 05:44` | Suomi-NPP | Nominal | `1.83` | `313.19` |
-| `FIRMS-UCY-2024-0002` | `-8.6822` | `-74.7200` | `2024-08-15 18:19` | Suomi-NPP | Nominal | `2.76` | `331.97` |
-| `FIRMS-UCY-2024-0003` | `-8.6541` | `-74.7040` | `2024-08-15 18:19` | Suomi-NPP | Nominal | `5.38` | `342.32` |
-| `FIRMS-UCY-2024-0004` | `-8.6494` | `-74.7324` | `2024-08-15 18:19` | Suomi-NPP | Nominal | `2.70` | `340.11` |
-| `FIRMS-UCY-2024-0005` | `-8.6452` | `-74.7330` | `2024-08-15 18:19` | Suomi-NPP | Nominal | `1.66` | `329.15` |
-| `FIRMS-UCY-2024-0006` | `-8.6444` | `-74.7291` | `2024-08-15 18:19` | Suomi-NPP | **Alta (h)** | `4.24` | `344.02` |
-| `FIRMS-UCY-2024-0007` | `-8.9694` | `-74.3026` | `2024-08-16 18:00` | Suomi-NPP | **Alta (h)** | `46.24` | `367.00` |
-| `FIRMS-UCY-2024-0008` | `-8.9699` | `-74.3065` | `2024-08-16 18:00` | Suomi-NPP | Nominal | `46.58` | `347.50` |
-| `FIRMS-UCY-2024-0009` | `-8.9743` | `-74.3042` | `2024-08-16 18:00` | Suomi-NPP | Nominal | `19.44` | `354.63` |
+| `FIRMS-UCY-2024-0001` | `-8.3092` | `-74.4768` | `2024-08-14 18:07` | Suomi-NPP | Nominal | `11.84` | `344.96` |
+| `FIRMS-UCY-2024-0002` | `-8.3924` | `-74.6334` | `2024-08-15 17:48` | Suomi-NPP | Nominal | `5.31` | `354.68` |
+| `FIRMS-UCY-2024-0003` | `-8.3906` | `-74.6333` | `2024-08-15 17:48` | Suomi-NPP | Nominal | `5.60` | `349.67` |
+| `FIRMS-UCY-2024-0004` | `-8.3041` | `-74.6465` | `2024-08-15 17:48` | Suomi-NPP | Nominal | `2.38` | `334.89` |
+| `FIRMS-UCY-2024-0005` | `-8.3038` | `-74.5455` | `2024-08-15 17:48` | Suomi-NPP | Nominal | `2.78` | `331.77` |
+| `FIRMS-UCY-2024-0006` | `-8.3547` | `-74.6067` | `2024-08-16 06:33` | Suomi-NPP | Nominal | `0.95` | `310.77` |
+| `FIRMS-UCY-2024-0012` | `-8.4397` | `-74.5402` | `2024-08-18 18:32` | Suomi-NPP | Nominal | `11.97` | `337.19` |
+| `FIRMS-UCY-2024-0020` | `-8.3467` | `-74.6392` | `2024-08-18 18:32` | Suomi-NPP | **Alta (h)** | `25.63` | `367.00` |
+| `FIRMS-UCY-2024-0021` | `-8.3452` | `-74.5409` | `2024-08-18 18:32` | Suomi-NPP | Nominal | `4.20` | `335.12` |
 
-*(El listado completo de los 37 focos se encuentra disponible en `data/raw/firms/firms_caso_estudio_seleccionado.csv`).*
+*(El listado completo de los 21 focos se encuentra disponible en `data/raw/firms/firms_caso_estudio_seleccionado.csv`).*
 
 ---
 
@@ -103,26 +103,25 @@ Se extrajeron y aislaron **37 detecciones activas** dentro del área de estudio 
   - Dirección predominante: Viento procedente del Este-Sureste ($110^\circ$ a $135^\circ$), empujando las llamas preferencialmente hacia el **Oeste-Noroeste** ($\theta_{\text{fuego}} \approx 290^\circ$ a $315^\circ$).
   - Humedad relativa media: $76.4\%$, temperatura ambiental media: $26.8^\circ\text{C}$.
 
-### 3.3 Cobertura Vegetal ESA WorldCover 10m (Task 1.3)
-- **Estado de Validación:** Verificado mediante `notebooks/exploracion_vegetacion_ESA_ipyn.ipynb`.
+### 3.3 Cobertura Vegetal ESA WorldCover 10m (Task 1.3 / Task 2.3)
+- **Estado de Validación:** Verificado mediante `notebooks/exploracion_vegetacion_ESA_ipyn.ipynb` y matriz local `data/raw/vegetation/pucallpa_vegetacion_50x50.npy`.
 - **Mosaico:** `ESA_WorldCover_10m_2021_v200_S09W075_Map.tif`.
 - **Distribución de Biomasa Combustible en la Zona Focal:**
-  - **Tree Cover / Bosque Húmedo Denso (Clase 10):** `78.4%` del área.
-  - **Shrubland / Matorral y Purmas (Clase 20):** `11.2%`.
-  - **Grassland / Pastizales de ganadería (Clase 30):** `4.6%`.
-  - **Cropland / Cultivos agrícolas (Clase 40):** `2.2%`.
-  - **Cuerpos de Agua Permanentes - Río Ucayali / Aguaytía (Clase 80):** `3.1%` (actúan como barreras infranqueables con $P_{\text{ignicion}} = 0$).
-  - **Cobertura inflamable total:** `96.4%`, garantizando continuidad del combustible vegetal sin vacíos de nubes.
+  - **Tree Cover / Bosque Húmedo Denso (Clase 10):** Dominante en la matriz (~76%).
+  - **Shrubland / Matorral y Purmas (Clase 20):** ~11%.
+  - **Grassland / Pastizales (Clase 30) y Cropland (Clase 40):** ~5%.
+  - **Cuerpos de Agua Permanentes - Río Ucayali / Aguaytía (Clase 80):** `6.0%` (actúan como barreras infranqueables con $P_{\text{ignicion}} = 0$).
+  - **Cobertura inflamable total:** `91.8%`, garantizando continuidad del combustible vegetal sin vacíos ni nubes.
 
-### 3.4 Modelo Digital de Elevación SRTM 30m (Task 1.4)
-- **Estado de Validación:** Verificado mediante `notebooks/exploracion_SRTM_dem.ipynb`.
+### 3.4 Modelo Digital de Elevación SRTM 30m (Task 1.4 / Task 2.3)
+- **Estado de Validación:** Verificado mediante `notebooks/exploracion_SRTM_dem.ipynb` y matriz local `data/raw/dem/pucallpa_dem_50x50.npy`.
 - **Archivo DEM:** `Pucallpa_SRTM_30m.tif` (1 arc-segundo, 30 metros de resolución nativa).
 - **Parámetros Topográficos:**
-  - Elevación mínima: `142.0 m.s.n.m.` (ribera aluvial).
-  - Elevación máxima: `208.0 m.s.n.m.` (lomas y terrazas altas).
-  - Desnivel total en la zona: `66.0 metros`.
-  - Pendiente promedio: `5.8°` (con desviación estándar de $\pm 3.6^\circ$).
-  - Ausencia absoluta de valores erróneos o vacíos `NoData` (`-32768.0`) en el área focal tras la limpieza.
+  - Elevación mínima: `142.6 m.s.n.m.` (ribera aluvial).
+  - Elevación máxima: `207.5 m.s.n.m.` (lomas y terrazas altas).
+  - Desnivel total en la zona: `64.9 metros`.
+  - Pendiente promedio: `4.76°` (con desviación estándar de $\pm 2.08^\circ$).
+  - Ausencia absoluta de valores erróneos o vacíos `NoData` (`-32768.0`) en el área focal.
 
 ---
 

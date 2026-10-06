@@ -31,7 +31,17 @@ MOORE_DIRECTIONS: Dict[Tuple[int, int], float] = {
     (-1, -1): 315.0,
 }
 
-# Coeficientes empíricos típicos de la literatura (Alexandridis et al., 2008)
+# ==============================================================================
+# Constantes empíricas de influencia del viento (Alexandridis et al., 2008)
+#
+# Fuente / Referencia:
+# Alexandridis, A., Vakalis, D., Siettos, C. I., & Bafas, G. V. (2008). 
+# A cellular automata model for forest fire spread prediction. 
+# Applied Mathematics and Computation, 204(1), 191-201.
+#
+# Documentado en el Wiki del proyecto: 
+# Ver resumen de Freire (2019) en wiki/ y docs/bibliografia_tracker.md.
+# ==============================================================================
 DEFAULT_C1 = 0.045  # Sensibilidad a la magnitud del viento (aceleración general)
 DEFAULT_C2 = 0.131  # Sensibilidad direccional (focalización en la dirección del viento)
 

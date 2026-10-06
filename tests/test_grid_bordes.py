@@ -20,6 +20,7 @@ def _crear_grilla_test() -> Grid:
     """Genera una grilla con probabilidad 1.0 para forzar ignición inmediata si hubiese fuga toroidal."""
     grid = Grid(tamano=TAMANO_GRID, prob_ignicion_base=1.0, pasos_para_quemarse=2, semilla=42)
     grid.vegetacion = np.ones((TAMANO_GRID, TAMANO_GRID), dtype=float)
+    grid.pendiente = np.zeros((TAMANO_GRID, TAMANO_GRID), dtype=float)
     return grid
 
 
