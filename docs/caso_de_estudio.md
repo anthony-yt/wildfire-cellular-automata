@@ -22,10 +22,10 @@ La matriz cuantitativa arrojó los siguientes resultados (escala normalizada de 
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | **C1: Focos NASA FIRMS** | **30%** | **8.63** *(2,974 focos)* | **8.69** *(1,124 focos)* | **8.62** *(1,433 focos)* | Densidad de detecciones, FRP medio/máx y clustering continuo |
 | **C2: Viento ERA5 / Reanálisis** | **20%** | **7.38** *(1.25 m/s, 100%)* | **8.54** *(1.55 m/s, 100%)* | **7.40** *(1.33 m/s, 100%)* | Serie horaria completa 72h-120h y vector direccional |
-| **C3: Vegetación ESA WorldCover** | **20%** | **9.13** *(91.8% combustible)* | **8.80** *(91.5% combustible)* | **7.50** *(82.0% combustible)* | Resolución 10m, biomasa arbórea/purma y barrera fluvial (6.0%) |
-| **C4: Topografía DEM SRTM** | **15%** | **9.20** *(Pendiente 4.76° ± 2.08°)* | **7.20** *(Pendiente 1.8° ± 1.2°)* | **6.80** *(Pendiente 24.5° ± 14.8°)* | Micro-relieve ondulado sin distorsión extrema de pendiente |
-| **C5: Grilla CA (50x50 / 100x100)** | **15%** | **9.40** *(Aspecto 1:1)* | **8.50** *(Aspecto 1.8:1)* | **7.00** *(Aspecto 2.4:1)* | Contención del frente de fuego en sub-grilla discreta |
-| **PUNTAJE FINAL PONDERADO** | **100%** | 🏆 **8.68 / 10.0** | **8.43 / 10.0** | **7.64 / 10.0** | **Puntaje Global Multicriterio** |
+| **C3: Vegetación Dynamic World** | **20%** | **7.32** *(63.45% combustible)* | **9.27** *(90.03% combustible)* | **9.27** *(90.46% combustible)* | Cobertura combustible real y continuidad espacial GEE |
+| **C4: Topografía Copernicus DEM** | **15%** | **3.13** *(Pendiente 2.17° ± 1.98°)* | **6.39** *(Pendiente 4.55° ± 3.42°)* | **4.15** *(Pendiente 10.70° ± 7.53°)* | Gradiente de elevación y pendiente moderada (3°–12°) |
+| **C5: Grilla CA (50x50)** | **15%** | **5.97** *(Aspecto 1.20)* | **6.24** *(Aspecto 1.03)* | **5.13** *(Aspecto 1.32)* | Contención del frente de fuego en sub-grilla local |
+| **PUNTAJE FINAL PONDERADO** | **100%** | **6.89 / 10.0** | 🏆 **8.06 / 10.0** | **7.31 / 10.0** | **Puntaje Global Multicriterio (Datos Reales GEE)** |
 
 ---
 
