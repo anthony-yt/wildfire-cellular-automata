@@ -12,5 +12,6 @@
   "elevation_min_m": 164.0,
   "elevation_max_m": 278.27,
   "mean_slope_deg": 4.55,
-  "std_slope_deg": 3.42
+  "std_slope_deg": 3.42,
+  "notebook_reference": "notebooks/Datay3regiones.ipynb"
 }

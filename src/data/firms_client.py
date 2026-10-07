@@ -292,7 +292,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        client = FIRMSClient(map_key=args.key or "dd367f00721ae7a571b8e4819df26133")
+        client = FIRMSClient(map_key=args.key)
         print(f"[*] Consultando NASA FIRMS ({args.source}) para los últimos {args.days} días...")
         print(f"[*] Bounding Box: {args.bbox}")
 

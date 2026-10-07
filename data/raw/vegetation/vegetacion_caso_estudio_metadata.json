@@ -18,5 +18,6 @@
   "water_class": {
     "0": "Agua"
   },
-  "flammable_biomass_pct": 90.03
+  "flammable_biomass_pct": 90.03,
+  "notebook_reference": "notebooks/Datay3regiones.ipynb"
 }
