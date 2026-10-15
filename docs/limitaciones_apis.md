@@ -1,6 +1,6 @@
 # Registro de Limitaciones y Especificaciones de APIs
 
-Este documento consolida las restricciones técnicas, límites de cuota (*rate limits*), cobertura temporal y formatos de respuesta identificados durante las pruebas de integración para el **Sprint 1 (Etapa 1: Cimientos y Datos)**.
+Este documento consolida las restricciones técnicas, límites de cuota (*rate limits*), cobertura temporal y formatos de respuesta identificados durante las pruebas de integración de las APIs meteorológicas y satelitales.
 
 ---
 
@@ -96,11 +96,9 @@ El viento es la variable física determinante en el modelo de ignición y propag
 
 ---
 
-### 2.4 Impacto y Condicionante para la Etapa 2 (Decisión de Arquitectura)
+### 2.4 Estrategia para Datos Meteorológicos Históricos
 
-* **Problema identificado:** La Etapa 2 y 3 del proyecto exigen calibrar el autómata celular frente a un **incendio forestal real ocurrido en el pasado** (Madre de Dios, Ucayali o San Martín). Al no disponer de cobertura histórica gratuita en OpenWeatherMap, una consulta con la fecha del incendio no puede ser satisfecha por sus endpoints estándar.
-* **Estrategia y Solución de Contingencia Implementada:**
-  1. **Monitoreo actual y proyecciones:** Se mantiene `OpenWeatherMap 2.5` para condiciones en vivo y pronósticos de propagación futura.
-  2. **Calibración histórica sin costo:** El cliente `src/data/weather_client.py` incluye integración con el archivo histórico de **Open-Meteo** (`archive-api.open-meteo.com`). Esta fuente utiliza el reanálisis **ERA5 del ECMWF**, es **100% gratuita**, abierta, no requiere clave API ni tarjeta de crédito, y provee series horarias de velocidad (`wind_speed_10m`) y dirección (`wind_direction_10m`) para cualquier latitud/longitud global desde 1940 a la fecha.
-  3. De esta forma, el proyecto queda 100% cubierto técnica y financieramente para cumplir con el Stage Gate de la Etapa 1 y el caso de estudio real en la Etapa 2.
+* **Contexto:** La calibración del autómata celular requiere datos meteorológicos horarios correspondientes a incendios forestales históricos. Dado que OpenWeatherMap restringe las consultas históricas en su plan gratuito, se adoptó una arquitectura complementaria:
+  1. **Monitoreo actual y proyecciones:** `OpenWeatherMap 2.5` para condiciones en tiempo real y pronósticos futuros.
+  2. **Reanálisis horario histórico:** `Open-Meteo` (`archive-api.open-meteo.com`) respaldado por el reanálisis **ERA5 del ECMWF**, abierto y sin costo de cuota, proveyendo series horarias continuas de velocidad y dirección del viento.
 

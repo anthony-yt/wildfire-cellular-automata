@@ -22,7 +22,6 @@ import urllib.request
 
 FIRMS_API_BASE_URL = "https://firms.modaps.eosdis.nasa.gov/api/area"
 
-# Fuentes satelitales soportadas por NASA FIRMS
 VALID_SOURCES = [
     "VIIRS_SNPP_NRT",
     "VIIRS_SNPP_SP",
@@ -34,7 +33,6 @@ VALID_SOURCES = [
     "LANDSAT_NRT",
 ]
 
-# Bounding box por defecto para pruebas: Cobertura de Perú (min_lon, min_lat, max_lon, max_lat)
 DEFAULT_PERU_BBOX: Tuple[float, float, float, float] = (-81.4, -18.4, -68.6, -0.03)
 
 
@@ -103,9 +101,6 @@ class FIRMSClient:
         west, south, east, north = bbox
         coord_str = f"{west:.4f},{south:.4f},{east:.4f},{north:.4f}"
 
-        # Estructura del endpoint:
-        # https://firms.modaps.eosdis.nasa.gov/api/area/[format]/[map_key]/[source]/[extent]/[days]
-        # o con fecha: .../[days]/[date]
         url = f"{FIRMS_API_BASE_URL}/{output_format}/{self.map_key}/{source}/{coord_str}/{day_range}"
         if date_str:
             url += f"/{date_str}"
@@ -171,7 +166,6 @@ class FIRMSClient:
             try:
                 lat = float(row.get("latitude", 0.0))
                 lon = float(row.get("longitude", 0.0))
-                # Brillo térmico (bright_ti4 para VIIRS o brightness para MODIS)
                 brightness_val = row.get("bright_ti4") or row.get("brightness")
                 brightness = float(brightness_val) if brightness_val else None
 
@@ -305,7 +299,6 @@ def main():
 
         print(f"[OK] Se obtuvieron {len(points)} focos de calor detectados.")
 
-        # Mostrar muestra de los primeros 5 registros
         if points:
             print("\n--- Muestra de los primeros registros ---")
             for p in points[:5]:

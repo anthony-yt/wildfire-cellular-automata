@@ -26,7 +26,6 @@ OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5"
 OPENWEATHER_ONECALL_URL = "https://api.openweathermap.org/data/3.0/onecall"
 OPENMETEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
 
-# Coordenadas de prueba por defecto: Puerto Maldonado, Madre de Dios (zona de alta incidencia)
 DEFAULT_TEST_COORD: Tuple[float, float] = (-12.5933, -69.1891)
 
 CARDINAL_DIRECTIONS = [
@@ -52,11 +51,9 @@ def wind_propagation_vector(speed_ms: float, wind_deg: float) -> Dict[str, float
     En meteorología, `wind_deg` es la dirección DE DONDE VIENE el viento (ej. 180° = viento del Sur).
     El fuego es empujado HACIA la dirección opuesta (hacia el Norte).
     """
-    # Dirección hacia la que viaja el viento en radianes
     travel_deg = calculate_wind_direction_spread(wind_deg)
     travel_rad = math.radians(travel_deg)
 
-    # Componentes cartesianas (u = Este-Oeste, v = Norte-Sur)
     u = speed_ms * math.sin(travel_rad)
     v = speed_ms * math.cos(travel_rad)
 
@@ -272,7 +269,6 @@ class WeatherClient:
         temps = hourly.get("temperature_2m", [])
         humidities = hourly.get("relative_humidity_2m", [])
 
-        # Calcular promedios y valores horarios para el día
         valid_speeds = [s for s in speeds if s is not None]
         avg_speed_kmh = sum(valid_speeds) / len(valid_speeds) if valid_speeds else 0.0
         avg_speed_ms = round(avg_speed_kmh / 3.6, 2)
@@ -395,23 +391,19 @@ class WeatherClient:
         today = datetime.datetime.now(datetime.timezone.utc).date()
         delta_days = (target_dt - today).days
 
-        # Caso 1: Fecha actual
         if delta_days == 0:
             current = self.get_current_weather(lat, lon)
             current["note"] = "Datos obtenidos de OpenWeatherMap Current API (Plan Gratuito)."
             return current
 
-        # Caso 2: Fecha en ventana de pronóstico (1 a 5 días futuros)
         if 0 < delta_days <= 5:
             forecast_items = self.get_forecast(lat, lon)
             matching = [it for it in forecast_items if it["datetime"].startswith(target_date)]
             if matching:
-                # Seleccionar el horario más representativo (mediodía o el primero)
                 midday = next((it for it in matching if "12:00:00" in it["datetime"]), matching[0])
                 midday["note"] = "Datos obtenidos de OpenWeatherMap 5-day / 3-hour Forecast API (Plan Gratuito)."
                 return midday
 
-        # Caso 3: Fecha histórica (en el pasado)
         if delta_days < 0:
             if allow_historical_fallback:
                 fallback_data = self.get_historical_fallback_openmeteo(lat, lon, target_date)
@@ -443,7 +435,6 @@ class WeatherClient:
             "endpoints": {},
         }
 
-        # 1. Test Current Weather 2.5
         test_url_current = f"{OPENWEATHER_BASE_URL}/weather?lat={lat}&lon={lon}&appid={self.api_key}"
         try:
             self._make_get_request(test_url_current)
@@ -455,7 +446,6 @@ class WeatherClient:
         except Exception as e:
             results["endpoints"]["current_weather_2.5"] = {"status": "FALLO", "error": str(e)}
 
-        # 2. Test Forecast 2.5
         test_url_forecast = f"{OPENWEATHER_BASE_URL}/forecast?lat={lat}&lon={lon}&appid={self.api_key}"
         try:
             self._make_get_request(test_url_forecast)
@@ -467,7 +457,6 @@ class WeatherClient:
         except Exception as e:
             results["endpoints"]["forecast_5day_2.5"] = {"status": "FALLO", "error": str(e)}
 
-        # 3. Test One Call 3.0 Timemachine (Histórico)
         test_url_onecall = f"{OPENWEATHER_ONECALL_URL}/timemachine?lat={lat}&lon={lon}&dt=1725148800&appid={self.api_key}"
         try:
             self._make_get_request(test_url_onecall)
@@ -484,7 +473,6 @@ class WeatherClient:
                 "details": str(e),
             }
 
-        # 4. Test History 2.5
         test_url_hist = (
             f"{OPENWEATHER_BASE_URL}/history/city?lat={lat}&lon={lon}&type=hour"
             f"&start=1725148800&end=1725235200&appid={self.api_key}"
@@ -640,7 +628,6 @@ def main():
             return
 
 
-        # Por defecto: Clima actual
         print(f"[*] Consultando clima y viento actual para Lat: {args.lat}, Lon: {args.lon}...")
         current = client.get_current_weather(lat=args.lat, lon=args.lon)
         w = current["wind"]

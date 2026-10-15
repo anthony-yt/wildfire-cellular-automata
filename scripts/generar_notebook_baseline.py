@@ -35,14 +35,14 @@ def add_code(source: str):
     })
 
 # 1. Portada y Explicación
-add_md("""# 🛰️ Simulación Baseline del Autómata Celular Híbrido sobre Ucayali (Task 4.2)
+add_md("""# Simulación Baseline del Autómata Celular Híbrido sobre Ucayali
 ## Calibración Espaciotemporal con Datos Reales: NASA FIRMS, ESA WorldCover, DEM SRTM y ERA5
 
 <a href="https://colab.research.google.com/github/anthony-yt/wildfire-cellular-automata/blob/jack-version/notebooks/simulacion_baseline_ucayali.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 ---
 
-### 📌 Objetivo del Experimento
+### Objetivo del Experimento
 Ejecutar el modelo consolidado de **Autómata Celular Híbrido** sobre el escenario real de **Ucayali (Pucallpa / Coronel Portillo)** integrando los 4 frentes de datos acoplados del proyecto:
 1. **Vegetación (ESA WorldCover 10m):** Matriz de combustible vegetal clasificada y barrera fluvial (Río Ucayali / Aguaytía).
 2. **Topografía (DEM SRTM 30m):** Modelo digital de elevación y cálculo de aceleración por pendiente ($f_s = \\exp(a_s \\theta_s)$, con $a_s = 0.078$, Alexandridis et al., 2008; Freire, 2019).
@@ -61,15 +61,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
-# ------------------------------------------------------------------------------
-# Configuración para Google Colab o Entorno Local
-# ------------------------------------------------------------------------------
+# Configuración de entorno
 if os.path.exists('src'):
     PROJECT_ROOT = Path('.').resolve()
 elif os.path.exists('../src'):
     PROJECT_ROOT = Path('..').resolve()
 else:
-    # Si se ejecuta directamente en Google Colab sin clon previa
     if not os.path.exists('wildfire-cellular-automata'):
         os.system('git clone -b jack-version https://github.com/anthony-yt/wildfire-cellular-automata.git')
     if os.path.exists('wildfire-cellular-automata'):
@@ -93,30 +90,25 @@ Cargamos directamente los archivos locales procesados y respaldados en `data/raw
 * Meteorología: `data/raw/weather/weather_caso_estudio_seleccionado.json`
 * Focos satelitales: `data/raw/firms/firms_caso_estudio_seleccionado.csv`""")
 
-add_code("""# 1. Cargar matriz de Vegetación ESA WorldCover (50x50)
+add_code("""# Carga de datos
 veg_path = PROJECT_ROOT / 'data' / 'raw' / 'vegetation' / 'pucallpa_vegetacion_50x50.npy'
 matriz_veg = np.load(veg_path)
 
-# Mapeo a factores de inflamabilidad base [0.0 - 1.0]
-# 10: Bosque (0.90), 20: Matorral (0.75), 30: Pasto (0.60), 40: Cultivo (0.50), 80: Agua (0.0), 50: Urbano (0.0)
 flamabilidad = np.zeros_like(matriz_veg, dtype=float)
 flamabilidad[matriz_veg == 10] = 0.90
 flamabilidad[matriz_veg == 20] = 0.75
 flamabilidad[matriz_veg == 30] = 0.60
 flamabilidad[matriz_veg == 40] = 0.50
 
-# 2. Cargar matriz de Elevación SRTM 30m (50x50) y calcular pendientes en grados
 dem_path = PROJECT_ROOT / 'data' / 'raw' / 'dem' / 'pucallpa_dem_50x50.npy'
 matriz_dem = np.load(dem_path)
 gy, gx = np.gradient(matriz_dem, 30.0, 30.0)
 matriz_pendiente_deg = np.degrees(np.arctan(np.sqrt(gx**2 + gy**2)))
 
-# 3. Cargar serie horaria de viento ERA5 (agosto de 2024)
 weather_path = PROJECT_ROOT / 'data' / 'raw' / 'weather' / 'weather_caso_estudio_seleccionado.json'
 with open(weather_path, encoding='utf-8') as f:
     weather_series = json.load(f)['series']
 
-# 4. Cargar detecciones de focos NASA FIRMS (VIIRS 375m SP - agosto 2024)
 firms_path = PROJECT_ROOT / 'data' / 'raw' / 'firms' / 'firms_caso_estudio_seleccionado.csv'
 with open(firms_path, encoding='utf-8') as f:
     focos_firms = list(csv.DictReader(f))

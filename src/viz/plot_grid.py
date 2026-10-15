@@ -31,7 +31,6 @@ from matplotlib.patches import Patch
 
 from src.model.grid import Grid, SANA, QUEMANDOSE, QUEMADA, NO_COMBUSTIBLE, AGUA
 
-# Contrato de estados discretos compartido con src.model.grid
 ESTADOS = {
     SANA: "Sana",
     QUEMANDOSE: "Quemándose",
@@ -41,15 +40,13 @@ ESTADOS = {
 }
 
 COLORES_ESTADO = {
-    SANA: "#2ecc71",           # verde
-    QUEMANDOSE: "#e74c3c",     # rojo
-    QUEMADA: "#111111",        # casi negro
-    NO_COMBUSTIBLE: "#95a5a6", # gris (rocas)
-    AGUA: "#3498db",           # azul (río/agua)
+    SANA: "#2ecc71",
+    QUEMANDOSE: "#e74c3c",
+    QUEMADA: "#111111",
+    NO_COMBUSTIBLE: "#95a5a6",
+    AGUA: "#3498db",
 }
 
-# BoundaryNorm con límites en semienteros [-0.5, 0.5, 1.5, …] para forzar
-# intervalos discretos exactos por cada entero y evitar interpolaciones de color.
 _CMAP = ListedColormap([COLORES_ESTADO[i] for i in range(len(COLORES_ESTADO))])
 _LIMITES = np.arange(-0.5, len(COLORES_ESTADO) + 0.5, 1)
 _NORMA = BoundaryNorm(_LIMITES, _CMAP.N)
@@ -107,11 +104,10 @@ def dibujar_grid(
     else:
         fig = ax.figure
 
-    # nearest preserva celdas nítidas sin difuminar bordes de estados
     im = ax.imshow(estado, cmap=_CMAP, norm=_NORMA, interpolation="nearest")
 
     if mostrar_lineas:
-        # El desfase de -0.5 alinea las líneas con las fronteras de las celdas y no con sus centros
+        # Offset de -0.5 para alinear con bordes de celda
         ax.set_xticks(np.arange(-0.5, estado.shape[1], 1), minor=True)
         ax.set_yticks(np.arange(-0.5, estado.shape[0], 1), minor=True)
         ax.grid(which="minor", color="white", linewidth=0.5)
@@ -163,7 +159,7 @@ def animar_grid(
         obj_titulo.set_text(titulo_fn(i))
         return im, obj_titulo
 
-    # blit=False necesario para permitir el redibujado correcto del título en cada frame
+    # blit=False para redibujar título
     anim = FuncAnimation(fig, _actualizar, frames=len(estados), interval=intervalo, blit=False)
     return anim
 
@@ -192,7 +188,7 @@ def generar_secuencia_grid(
 
     rng = np.random.default_rng(semilla)
 
-    # Río sinuoso de 2 celdas de ancho
+    # Río
     centro_c = int(tamano * 0.55)
     for r in range(tamano):
         c = int(centro_c + 2.0 * np.sin(r / 3.5))
@@ -201,7 +197,7 @@ def generar_secuencia_grid(
         if 0 <= c + 1 < tamano:
             grid.agregar_rio(r, c + 1)
 
-    # Obstáculos aleatorios (rocas)
+    # Obstáculos
     n_no_comb = int(tamano * tamano * fraccion_no_combustible)
     candidatas = np.argwhere(grid.estado == SANA)
     idx = rng.choice(len(candidatas), size=min(n_no_comb, len(candidatas)), replace=False)
@@ -209,7 +205,7 @@ def generar_secuencia_grid(
         r, c = candidatas[i]
         grid.agregar_obstaculo(r, c)
 
-    # Generación de fuego al oeste del río para evidenciar el agua como barrera natural
+    # Foco inicial
     candidatas_fuego = np.argwhere(grid.estado[:, :max(1, centro_c - 2)] == SANA)
     if len(candidatas_fuego) == 0:
         candidatas_fuego = np.argwhere(grid.estado == SANA)
@@ -217,7 +213,6 @@ def generar_secuencia_grid(
     r, c = candidatas_fuego[elegida]
     grid.encender_celda(r, c)
 
-    # .copy() necesario debido a que Grid muta in-place
     secuencia = [grid.estado.copy()]
     for _ in range(n_pasos - 1):
         grid.paso_tiempo()

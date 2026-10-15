@@ -1,20 +1,17 @@
 import numpy as np
 
-# Estados de la celda
 SANA = 0
 QUEMANDOSE = 1
 QUEMADA = 2
 NO_COMBUSTIBLE = 3
 AGUA = 4
 
-# Vecindad de Moore
 VECINOS = [
     (-1, 0), (1, 0), (0, 1), (0, -1),
     (-1, 1), (-1, -1), (1, 1), (1, -1),
 ]
 
-# Constante de sensibilidad a la pendiente (Alexandridis et al., 2008; Freire, 2019)
-DEFAULT_AS = 0.078
+DEFAULT_AS = 0.078  # Alexandridis et al. (2008)
 
 
 def _desplazar_vecino(matriz: np.ndarray, df: int, dc: int) -> np.ndarray:
@@ -46,7 +43,6 @@ class Grid:
 
         self.estado = np.full((tamano, tamano), SANA, dtype=np.int8)
 
-        # Vegetación y pendiente
         self.vegetacion = np.random.uniform(0, 1, (tamano, tamano))
         self.pendiente = np.random.uniform(0, 1, (tamano, tamano))
 
@@ -65,9 +61,6 @@ class Grid:
         self.estado[fila, columna] = AGUA
 
     def _vecinas_quemandose(self):
-        # Desplazamos el grid para cada vecino y verificamos si hay fuego
-        # anulando las fronteras para evitar el wrap toroidal de np.roll.
-
         quemandose = (self.estado == QUEMANDOSE)
         hay_vecina_en_llamas = np.zeros_like(quemandose)
 
@@ -80,7 +73,6 @@ class Grid:
         sanas = (self.estado == SANA)
         quemandose = (self.estado == QUEMANDOSE)
 
-        # Modulación por pendiente (Alexandridis et al., 2008: exp(as * slope_deg))
         factor_pendiente = np.exp(as_slope * self.pendiente) if getattr(self, 'pendiente', None) is not None else 1.0
 
         if formulacion is not None:
@@ -93,7 +85,6 @@ class Grid:
             tiradas = np.random.uniform(0, 1, self.estado.shape)
             se_enciende = sanas & vecina_en_llamas & (tiradas < probabilidad)
         else:
-            # Probabilidad de ignición combinada considerando la dirección y factor de cada vecino
             prob_no_enciende = np.ones_like(self.vegetacion)
             prob_base = np.clip(self.vegetacion * self.prob_ignicion_base * factor_pendiente, 0.0, 1.0)
 

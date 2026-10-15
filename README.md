@@ -6,14 +6,17 @@ Autómata celular híbrido para la propagación de incendios forestales en Sudam
 
 ```text
 data/
-    raw/         # fuentes originales, nunca se modifican (FIRMS, clima, vegetación, DEM)
-    processed/   # datos limpios/transformados, listos para el modelo
-docs/            # documentación técnica, reportes, limitaciones de APIs, bibliografía
-notebooks/       # notebooks de exploración, simulación y calibración
+    raw/         # Fuentes originales (FIRMS, clima, vegetación, DEM)
+    processed/   # Datos procesados listos para el modelo
+docs/            # Documentación técnica, reportes y limitaciones
+notebooks/       # Notebooks de exploración y simulación
+scripts/         # Scripts de evaluación multicriterio y verificación
 src/
-    data/        # clientes e ingestión de APIs (NASA FIRMS, OpenWeatherMap / ERA5)
-    model/       # lógica del autómata celular (grid.py, wind_influence.py)
-tests/           # pruebas unitarias automatizadas
+    data/        # Clientes e ingestión de APIs (NASA FIRMS, OpenWeatherMap / ERA5)
+    model/       # Lógica del autómata celular (grid, wind_influence, ignicion_propagator)
+    viz/         # Visualización y renderizado
+tests/           # Suite de pruebas unitarias automatizadas
+wiki/            # Fichas técnicas bibliográficas de papers del modelo
 ```
 
 ## Instalación local
@@ -31,10 +34,10 @@ pip install -r requirements.txt
 Descarga de focos de calor activos de los últimos 5 días sobre Perú (detecciones VIIRS/MODIS):
 
 ```bash
-# Guardar en CSV
+# Exportar en CSV
 python src/data/firms_client.py --days 5 --output data/raw/firms/focos_peru.csv
 
-# Guardar en JSON
+# Exportar en JSON
 python src/data/firms_client.py --days 5 --format json --output data/raw/firms/focos_peru.json
 ```
 
@@ -45,19 +48,19 @@ python src/data/firms_client.py --days 5 --format json --output data/raw/firms/f
 Consulta de variables meteorológicas críticas para el fuego: velocidad del viento ($V$), dirección de procedencia, vector de empuje sobre las llamas ($\theta_{\text{fuego}} = \theta_{\text{viento}} + 180^\circ$), temperatura y humedad:
 
 ```bash
-# 1. Diagnóstico de endpoints y permisos de la API Key
+# Diagnóstico de endpoints y permisos de API
 python src/data/weather_client.py --check
 
-# 2. Clima y viento actual en tiempo real (ejemplo: Puerto Maldonado, Madre de Dios)
+# Clima y viento actual en tiempo real
 python src/data/weather_client.py --lat -12.5933 --lon -69.1891 --output data/raw/weather/clima_actual_muestra.json
 
-# 3. Pronóstico futuro a 5 días (intervalos cada 3 horas)
+# Pronóstico a 5 días (intervalos de 3h)
 python src/data/weather_client.py --forecast --lat -12.5933 --lon -69.1891
 
-# 4. Consulta por fecha histórica específica (activa reanálisis horario ERA5 vía Open-Meteo)
+# Consulta histórica por fecha (reanálisis horario ERA5 vía Open-Meteo)
 python src/data/weather_client.py --lat -12.5933 --lon -69.1891 --date 2024-08-15
 
-# 5. Extracción de serie horaria histórica multidiaria (para calibración en Etapa 2)
+# Extracción de serie horaria multidiaria
 python src/data/weather_client.py --lat -12.5933 --lon -69.1891 --start-date 2024-08-14 --end-date 2024-08-16 --output data/raw/weather/viento_historico_serie.json
 ```
 
@@ -79,9 +82,14 @@ $$f_w = \exp\left(c_1 \cdot V + c_2 \cdot (\cos(\theta_{\text{vecino}} - \theta_
 
 ## Pruebas y Notebooks
 
-### Pruebas Unitarias Automatizadas
+### Pruebas Unitarias Automatizadas (48 pruebas)
 ```bash
-python -m unittest tests/test_weather_and_wind.py
+pytest
+```
+
+### Verificación Cruzada del Caso de Estudio
+```bash
+python scripts/verificar_caso_estudio.py
 ```
 
 ### Notebooks Disponibles

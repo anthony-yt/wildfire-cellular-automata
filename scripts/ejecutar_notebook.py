@@ -18,7 +18,6 @@ nb_path = PROJECT_ROOT / "notebooks" / "simulacion_baseline_ucayali.ipynb"
 with open(nb_path, encoding="utf-8") as f:
     nb = json.load(f)
 
-# Espacio de nombres compartido para la ejecución
 global_env = {}
 
 exec_counter = 1
@@ -32,7 +31,6 @@ for cell in nb["cells"]:
     
     stdout_buffer = io.StringIO()
     
-    # Interceptar figuras generadas por matplotlib
     plt.close("all")
     
     try:
@@ -47,7 +45,6 @@ for cell in nb["cells"]:
                 "text": [line + "\n" for line in stdout_text.splitlines()]
             })
             
-        # Si se generaron figuras de matplotlib
         figs = [plt.figure(i) for i in plt.get_fignums()]
         for fig in figs:
             img_buf = io.BytesIO()

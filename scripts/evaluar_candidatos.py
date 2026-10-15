@@ -28,7 +28,6 @@ import numpy as np
 from src.data.firms_client import FIRMSClient
 from src.data.weather_client import WeatherClient
 
-# Macro Bounding Boxes definidos en plan_evaluacion_caso_estudio.md
 CANDIDATES = {
     "Ucayali": {
         "macro_bbox": (-76.0, -11.5, -72.0, -7.0),
@@ -74,14 +73,12 @@ def calcular_clustering_espacial(points: List[Dict[str, Any]]) -> float:
         return 0.2
     
     coords = np.array([(p["latitude"], p["longitude"]) for p in points])
-    # Distancia euclídea media al vecino más cercano (grados)
     diffs = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
     dists = np.sqrt(np.sum(diffs ** 2, axis=-1))
     np.fill_diagonal(dists, np.inf)
     min_dists = np.min(dists, axis=1)
     
     dist_media_km = float(np.mean(min_dists) * 111.0)
-    # Si la distancia media al vecino más cercano es < 2 km, clustering es alto (>0.8)
     clustering = float(np.clip(1.0 / (1.0 + 0.3 * dist_media_km), 0.1, 1.0))
     return clustering
 
@@ -93,7 +90,6 @@ def evaluar_focos_firms(firms_client: FIRMSClient, candidate_name: str, config: 
     start_date = config["target_dates"][0]
     
     try:
-        # Usamos el archivo histórico Standard Processing (VIIRS_SNPP_SP) para el rango exacto de agosto 2024
         points = firms_client.get_fire_points(
             bbox=bbox,
             day_range=5,
@@ -113,8 +109,7 @@ def evaluar_focos_firms(firms_client: FIRMSClient, candidate_name: str, config: 
     
     clustering = calcular_clustering_espacial(points)
     
-    # Normalización del puntaje C1 (1 a 10)
-    # Volumen: hasta 1000 focos da 4 pts; calidad: hasta 3 pts; clustering: hasta 3 pts
+    # Puntaje C1: volumen (4) + calidad (3) + clustering (3)
     score_volumen = min(4.0, (total / 1000.0) * 4.0)
     score_calidad = (pct_alta_calidad / 100.0) * 3.0
     score_cluster = clustering * 3.0
@@ -152,12 +147,11 @@ def evaluar_viento(weather_client: WeatherClient, candidate_name: str, config: D
     vel_max = max(speeds)
     gust_max = max(gusts) if gusts else vel_max * 1.4
     
-    # Consistencia direccional (longitud del vector medio resultante R)
     u_vals = [np.sin(np.radians(d)) for d in dirs]
     v_vals = [np.cos(np.radians(d)) for d in dirs]
     r_resultante = float(np.sqrt(np.mean(u_vals) ** 2 + np.mean(v_vals) ** 2))
     
-    # Puntaje C2 (1 a 10): Disponibilidad (5 pts) + Magnitud aprovechable para CA (3 pts) + Estabilidad direccional (2 pts)
+    # Puntaje C2: disponibilidad (5) + magnitud (3) + dirección (2)
     disp_pts = 5.0 if total_hours >= 72 else (total_hours / 72.0) * 5.0
     vel_pts = min(3.0, (vel_media / 2.0) * 3.0)
     dir_pts = r_resultante * 2.0
@@ -178,7 +172,6 @@ def evaluar_viento(weather_client: WeatherClient, candidate_name: str, config: D
 def evaluar_vegetacion(candidate_name: str, config: Dict[str, Any]) -> Dict[str, Any]:
     """Evalúa el Criterio 3 usando cobertura vegetal de Dynamic World."""
 
-    # Archivo de vegetación correspondiente a cada candidato
     archivos_vegetacion = {
         "Ucayali": "ucayali_vegetacion_2024_50m.npy",
         "Madre de Dios": "madre_de_dios_vegetacion_2024_50m.npy",
@@ -186,96 +179,38 @@ def evaluar_vegetacion(candidate_name: str, config: Dict[str, Any]) -> Dict[str,
         "San Martín": "san_martin_vegetacion_2024_50m.npy",
     }
 
-    # Construimos la ruta al archivo .npy
-    matriz_path = (PROJECT_ROOT / "data"/ "raw"/ "vegetation"/ archivos_vegetacion[candidate_name] )
-
-    # Si no existe el archivo, detenemos la evaluación
+    matriz_path = PROJECT_ROOT / "data" / "raw" / "vegetation" / archivos_vegetacion[candidate_name]
     if not matriz_path.exists():
-        raise FileNotFoundError(
-            f"No se encontró el archivo de vegetación: {matriz_path}"
-        )
+        raise FileNotFoundError(f"No se encontró el archivo de vegetación: {matriz_path}")
 
-    # Cargamos la matriz de vegetación
     matriz_veg = np.load(matriz_path)
-
-    # Los píxeles con 255 representan zonas sin datos
     validos = matriz_veg != 255
     total_validos = validos.sum()
-
     if total_validos == 0:
-        raise ValueError(
-            f"No hay píxeles válidos de vegetación para {candidate_name}"
-        )
-    # Dynamic World:
-    # 1 = árboles
-    # 2 = pasto
-    # 4 = cultivos
-    # 5 = matorral
-    combustible_mask = (
-        np.isin(matriz_veg, [1, 2, 4, 5])
-        & validos
-    )
+        raise ValueError(f"No hay píxeles válidos de vegetación para {candidate_name}")
 
-    # Porcentaje de cobertura combustible
-    combustible_pct = round(
-        float(combustible_mask.sum() / validos.sum() * 100),
-        2
-    )
+    combustible_mask = np.isin(matriz_veg, [1, 2, 4, 5]) & validos
+    combustible_pct = round(float(combustible_mask.sum() / validos.sum() * 100), 2)
 
-    # Dynamic World: 0 = agua
     agua_mask = (matriz_veg == 0) & validos
+    agua_pct = round(float(agua_mask.sum() / validos.sum() * 100), 2)
 
-    # Porcentaje de agua
-    agua_pct = round(
-        float(agua_mask.sum() / validos.sum() * 100),
-        2
-    )
-
-    # Todos los píxeles excepto la última columna
+    # Conectividad espacial
     izquierda = combustible_mask[:, :-1]
-
-    # Todos los píxeles excepto la primera columna
     derecha = combustible_mask[:, 1:]
+    num_conexiones_h = np.sum(izquierda & derecha)
+    posibles_h = np.sum(izquierda & validos[:, 1:])
 
-    # True únicamente cuando ambos vecinos son combustibles: T -> T
-    conexiones_h = izquierda & derecha
-
-    # Cantidad de conexiones horizontales combustible-combustible
-    num_conexiones_h = np.sum(conexiones_h)
-
-    # Verificamos que el vecino derecho tenga información válida
-    derecha_valida = validos[:, 1:]
-
-    # Casos que empiezan en combustible y tienen un vecino válido
-    posibles_h = np.sum(izquierda & derecha_valida)
-
-    # Todas las filas excepto la última
     arriba = combustible_mask[:-1, :]
-
-    # Todas las filas excepto la primera
     abajo = combustible_mask[1:, :]
+    num_conexiones_v = np.sum(arriba & abajo)
+    posibles_v = np.sum(arriba & validos[1:, :])
 
-    # True únicamente cuando ambos vecinos son combustibles
-    conexiones_v = arriba & abajo
-
-    # Cantidad de conexiones verticales combustible-combustible
-    num_conexiones_v = np.sum(conexiones_v)
-
-    # Verificamos que el vecino inferior tenga información válida
-    abajo_valido = validos[1:, :]
-
-    # Casos que empiezan en combustible y tienen un vecino inferior válido
-    posibles_v = np.sum(arriba & abajo_valido)
-
-    # Total de comparaciones que realmente podían evaluarse
     total_posibles = posibles_h + posibles_v
-    continuidad = ((num_conexiones_h + num_conexiones_v) / total_posibles if total_posibles > 0 else 0.0
-)
+    continuidad = (num_conexiones_h + num_conexiones_v) / total_posibles if total_posibles > 0 else 0.0
     continuidad = round(float(continuidad), 3)
 
-    # Puntaje del criterio C3
-    # 70% depende de cobertura combustible y 30% de continuidad
-    c3_score = round( float(np.clip((combustible_pct / 100.0) * 7.0 + continuidad * 3.0,1.0,10.0 )),2)
+    c3_score = round(float(np.clip((combustible_pct / 100.0) * 7.0 + continuidad * 3.0, 1.0, 10.0)), 2)
 
     detalles = (
         f"Calculado directamente de Dynamic World ({matriz_path.name}): "
@@ -315,11 +250,8 @@ def evaluar_topografia_dem(candidate_name: str, config: Dict[str, Any]) -> Dict[
     pendiente_media = round(float(np.nanmean(pendiente)), 2)
     pendiente_std = round(float(np.nanstd(pendiente)), 2)
 
-    # Porcentaje de terreno con pendiente moderada útil para el modelo
     pendiente_util = (pendiente >= 3.0) & (pendiente <= 12.0)
     pct_pendiente_util = float(np.mean(pendiente_util))
-
-    # Escala 1-10 directamente desde la proporción observada
     c4_score = round(1.0 + 9.0 * pct_pendiente_util, 2)
 
     return {
@@ -369,15 +301,9 @@ def evaluar_grilla_ca(
 
     aspect_ratio = lado_mayor / lado_menor if lado_menor > 0 else 999
 
-    # 1 cuando la forma es cuadrada, disminuye al hacerse alargada
     score_forma = 1.0 / aspect_ratio
-
-    # Plan original: subgrilla ajustada de aproximadamente 5 km
     score_contencion = min(1.0, 5.0 / lado_mayor)
-
-    # Ambos aspectos son necesarios para que la grilla sea adecuada
     indice_grilla = (score_forma + score_contencion) / 2.0
-
     c5_score = round(1.0 + 9.0 * indice_grilla, 2)
 
     return {
@@ -446,7 +372,6 @@ def main():
         f"({ganador_data['puntaje_total']}/10)"
     )
     print("=" * 80)
-    # Tabla comparativa Markdown
     print("\n### TABLA COMPARATIVA DE PUNTUACIONES MULTICRITERIO ###\n")
     header = "| Criterio | Peso | " + " | ".join(resultados.keys()) + " | Indicador Clave |"
     sep = "| :--- | :---: | " + " | ".join([":---:" for _ in resultados]) + " | :--- |"
@@ -468,14 +393,12 @@ def main():
     focus_bbox = ganador_data["config"]["focus_bbox"]
     all_points = ganador_data["c1"]["points"]
     
-    # Filtrar focos dentro del Bounding Box ajustado de la zona focal
     west, south, east, north = focus_bbox
     selected_focos = [
         p for p in all_points
         if west <= p["longitude"] <= east and south <= p["latitude"] <= north
     ]
-    
-    # Si aún no hay suficientes, usar los primeros focos disponibles del candidato ganador
+
     if len(selected_focos) < 5:
         selected_focos = all_points[:35]
 
@@ -487,36 +410,32 @@ def main():
 
     prefijo = prefijos[ganador_name]
 
-    # Asignar IDs únicos
     for idx, p in enumerate(selected_focos, start=1):
         p["fire_id"] = f"FIRMS-{prefijo}-2024-{idx:04d}"
-    
-    # 1. Guardar CSV de FIRMS
+
     raw_firms_dir = PROJECT_ROOT / "data" / "raw" / "firms"
     raw_firms_dir.mkdir(parents=True, exist_ok=True)
     csv_file = raw_firms_dir / "firms_caso_estudio_seleccionado.csv"
     json_file = raw_firms_dir / "firms_caso_estudio_seleccionado.json"
-    
+
     if selected_focos:
         fieldnames = list(selected_focos[0].keys())
         with open(csv_file, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(selected_focos)
-        
+
         with open(json_file, "w", encoding="utf-8") as f:
             json.dump(selected_focos, f, indent=2, ensure_ascii=False)
         print(f"[OK] Focos seleccionados ({len(selected_focos)} registros) guardados en:\n     {csv_file}\n     {json_file}")
-    
-    # 2. Guardar serie horaria de Viento
+
     raw_weather_dir = PROJECT_ROOT / "data" / "raw" / "weather"
     raw_weather_dir.mkdir(parents=True, exist_ok=True)
     weather_json = raw_weather_dir / "weather_caso_estudio_seleccionado.json"
     with open(weather_json, "w", encoding="utf-8") as f:
         json.dump(ganador_data["c2"]["raw_series"], f, indent=2, ensure_ascii=False)
     print(f"[OK] Serie horaria meteorológica guardada en:\n     {weather_json}")
-    
-    # 3. Guardar metadatos de Vegetación y DEM
+
     raw_veg_dir = PROJECT_ROOT / "data" / "raw" / "vegetation"
     raw_veg_dir.mkdir(parents=True, exist_ok=True)
     veg_metadata_file = raw_veg_dir / "vegetacion_caso_estudio_metadata.json"
@@ -559,7 +478,7 @@ def main():
         json.dump(dem_meta, f, indent=2, ensure_ascii=False)
     print(f"[OK] Metadatos de topografía DEM guardados en:\n     {dem_metadata_file}")
     
-    # 4. Guardar resumen consolidado de evaluación en JSON
+    # Guardar resumen consolidado
     eval_summary_file = PROJECT_ROOT / "data" / "processed" / "evaluacion_multicriterio_resumen.json"
     eval_summary_file.parent.mkdir(parents=True, exist_ok=True)
     

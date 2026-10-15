@@ -1,5 +1,5 @@
-# 📄 CASO DE ESTUDIO REAL SELECCIONADO: MADRE DE DIOS (TAMBOPATA / PUERTO MALDONADO)
-## Documento Oficial de Selección, Delimitación y Validación Multicriterio (Task 3.2 - Sprint 1 / Sprint 3)
+# Caso de Estudio Seleccionado: Madre de Dios (Tambopata / Puerto Maldonado)
+## Selección, delimitación geográfica y validación multicriterio
 
 ---
 
@@ -7,12 +7,12 @@
 
 Para la validación del **Autómata Celular Híbrido de Propagación de Incendios Forestales**, se ejecutó una evaluación multicriterio estandarizada y cuantitativa sobre los tres departamentos candidatos de la Amazonía peruana: **Madre de Dios**, **San Martín** y **Ucayali**. 
 
-La evaluación integró los 4 frentes de datos desarrollados en la Etapa 1 con datos satelitales reales de Google Earth Engine:
-1. **C1 (30%): NASA FIRMS (Task 1.1)** — Densidad, potencia radiativa (*FRP*), confiabilidad y continuidad espacial (*clustering*).
-2. **C2 (20%): Viento ERA5 / OpenWeather (Task 1.2)** — Disponibilidad horaria ininterrumpida, velocidad y estabilidad direccional del vector de empuje.
-3. **C3 (20%): Vegetación Dynamic World 2024 (Task 1.3 / 2.2)** — Cobertura de biomasa combustible inflamable y continuidad espacial sin vacíos.
-4. **C4 (15%): DEM Copernicus GLO-30 (Task 1.4 / 2.2)** — Gradiente de elevación y porcentaje de terreno con pendiente moderada aprovechable ($3^\circ$–$12^\circ$).
-5. **C5 (15%): Idoneidad para Grilla CA (50x50)** — Relación de aspecto cuadrática óptima y contención del frente activo en escala local táctica (~5 km).
+La evaluación integró cuatro fuentes de datos con información satelital real de Google Earth Engine:
+1. **C1 (30%): NASA FIRMS** — Densidad, potencia radiativa (*FRP*), confiabilidad y continuidad espacial (*clustering*).
+2. **C2 (20%): Viento ERA5 / OpenWeather** — Disponibilidad horaria, velocidad y estabilidad direccional del vector de empuje.
+3. **C3 (20%): Vegetación Dynamic World** — Cobertura de biomasa combustible inflamable y continuidad espacial.
+4. **C4 (15%): DEM Copernicus GLO-30** — Gradiente de elevación y porcentaje de terreno con pendiente moderada ($3^\circ$–$12^\circ$).
+5. **C5 (15%): Grilla CA (50x50)** — Relación de aspecto e idoneidad para la grilla local del autómata celular.
 
 ### Tabla Comparativa de Puntuaciones Multicriterio
 
@@ -25,7 +25,7 @@ La matriz cuantitativa arrojó los siguientes resultados (escala normalizada de 
 | **C3: Vegetación Dynamic World** | **20%** | **7.32** *(63.45% combustible)* | **9.27** *(90.03% combustible)* | **9.27** *(90.46% combustible)* | Cobertura combustible real y continuidad espacial GEE |
 | **C4: Topografía Copernicus DEM** | **15%** | **3.13** *(Pendiente 2.17° ± 1.98°)* | **6.39** *(Pendiente 4.55° ± 3.42°)* | **4.15** *(Pendiente 10.70° ± 7.53°)* | Gradiente de elevación y pendiente moderada (3°–12°) |
 | **C5: Grilla CA (50x50)** | **15%** | **5.97** *(Aspecto 1.20)* | **6.24** *(Aspecto 1.03)* | **5.13** *(Aspecto 1.32)* | Contención del frente de fuego en sub-grilla local |
-| **PUNTAJE FINAL PONDERADO** | **100%** | **6.89 / 10.0** | 🏆 **8.06 / 10.0** | **7.31 / 10.0** | **Puntaje Global Multicriterio (Datos Reales GEE)** |
+| **PUNTAJE FINAL PONDERADO** | **100%** | **6.89 / 10.0** | **8.06 / 10.0** | **7.31 / 10.0** | **Puntaje Global Multicriterio** |
 
 ---
 
@@ -93,7 +93,7 @@ Se extrajeron y aislaron **22 detecciones activas** dentro del área focal de es
 
 ## 3. Confirmación y Validación de las 4 Fuentes de Datos
 
-### 3.1 NASA FIRMS (Task 1.1)
+### 3.1 NASA FIRMS
 - **Estado de Validación:** Verificado exitosamente con `FIRMSClient`.
 - **Estadísticas del Evento:**
   - Total de detecciones en área focal: **22 focos** (1,124 focos a nivel macro departamental).
@@ -102,7 +102,7 @@ Se extrajeron y aislaron **22 detecciones activas** dentro del área focal de es
   - Proporción de confiabilidad alta/nominal: **81.2%**.
   - Formato de guardado: CSV y JSON en `data/raw/firms/`.
 
-### 3.2 Viento y Atmósfera ERA5 / Open-Meteo (Task 1.2)
+### 3.2 Viento y Atmósfera ERA5 / Open-Meteo
 - **Estado de Validación:** Verificado exitosamente con `WeatherClient`.
 - **Serie Temporal:** 120 horas continuas sin interrupciones (100% de disponibilidad).
 - **Parámetros Meteorológicos:**
@@ -111,7 +111,7 @@ Se extrajeron y aislaron **22 detecciones activas** dentro del área focal de es
   - Ráfagas máximas (*gusts*): `7.81 m/s`.
   - Consistencia direccional del vector medio: $r = 0.603$ (alta estabilidad direccional).
 
-### 3.3 Cobertura Vegetal Dynamic World 2024 (Task 1.3 / Task 2.2)
+### 3.3 Cobertura Vegetal Dynamic World
 - **Estado de Validación:** Verificado mediante Google Earth Engine (`notebooks/Datay3regiones.ipynb`) y matriz local `data/raw/vegetation/madre_de_dios_vegetacion_2024_50m.npy`.
 - **Dataset:** Dynamic World (Sentinel-2 / Google Earth Engine).
 - **Distribución de Biomasa Combustible:**
@@ -119,7 +119,7 @@ Se extrajeron y aislaron **22 detecciones activas** dentro del área focal de es
   - **Barreras hídricas (Clase 0 - Agua):** `5.26%` (río Madre de Dios / Tambopata).
   - **Índice de continuidad espacial:** `0.988`.
 
-### 3.4 Modelo Digital de Elevación Copernicus DEM GLO-30 (Task 1.4 / Task 2.2)
+### 3.4 Modelo Digital de Elevación Copernicus DEM GLO-30
 - **Estado de Validación:** Verificado mediante Google Earth Engine (`notebooks/Datay3regiones.ipynb`) y matriz local `data/raw/dem/madre_de_dios_dem_50m.npy`.
 - **Dataset:** Copernicus DEM GLO-30 (30m remuestreado a 50m).
 - **Parámetros Topográficos:**
@@ -169,4 +169,4 @@ Todos los datos y códigos requeridos para la reproducibilidad de este caso de e
 - **Serie de Viento ERA5:** [`data/raw/weather/weather_caso_estudio_seleccionado.json`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/data/raw/weather/weather_caso_estudio_seleccionado.json)
 - **Metadatos Vegetación:** [`data/raw/vegetation/vegetacion_caso_estudio_metadata.json`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/data/raw/vegetation/vegetacion_caso_estudio_metadata.json)
 - **Metadatos DEM:** [`data/raw/dem/dem_caso_estudio_metadata.json`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/data/raw/dem/dem_caso_estudio_metadata.json)
-- **Notebooks de soporte geoespacial:** [`notebooks/exploracion_vegetacion_ESA_ipyn.ipynb`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/notebooks/exploracion_vegetacion_ESA_ipyn.ipynb) y [`notebooks/exploracion_SRTM_dem.ipynb`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/notebooks/exploracion_SRTM_dem.ipynb)
+- **Notebooks de procesamiento:** [`notebooks/Datay3regiones.ipynb`](../notebooks/Datay3regiones.ipynb), [`notebooks/Copernicus_GLO_30.ipynb`](../notebooks/Copernicus_GLO_30.ipynb) y [`notebooks/calibracion_caso_estudio.ipynb`](../notebooks/calibracion_caso_estudio.ipynb)

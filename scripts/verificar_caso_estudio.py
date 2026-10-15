@@ -411,16 +411,18 @@ def verificar_caso_declarado(repo: Path, texto_doc: str, resumen: dict) -> List[
 
 # Ejecución y reporte
 
+PESOS_EVALUACION: Dict[int, float] = {1: 0.30, 2: 0.20, 3: 0.20, 4: 0.15, 5: 0.15}
+
 def verificar(repo: Path) -> List[Resultado]:
     texto_doc = (repo / "docs" / "caso_de_estudio.md").read_text(encoding="utf-8")
-    texto_plan = (repo / "plan_evaluacion_caso_estudio.md").read_text(encoding="utf-8")
+    pesos = PESOS_EVALUACION
     resumen = json.loads((repo / "data" / "processed" / "evaluacion_multicriterio_resumen.json")
                          .read_text(encoding="utf-8"))
     candidatos = list(resumen)
     return (verificar_fechas(repo, texto_doc)
             + verificar_respaldo_geoespacial(repo, candidatos)
             + verificar_datos_reales_vs_reportados(repo, resumen, candidatos)
-            + verificar_puntajes(resumen, leer_pesos_plan(texto_plan), leer_puntajes_doc(texto_doc))
+            + verificar_puntajes(resumen, pesos, leer_puntajes_doc(texto_doc))
             + verificar_caso_declarado(repo, texto_doc, resumen))
 
 def formatear(resultados: List[Resultado], markdown: bool) -> str:
