@@ -1,6 +1,6 @@
 # wildfire-cellular-automata
 
-Autómata celular híbrido para la propagación de incendios forestales en Sudamérica. Actualmente evaluando la densidad de datos de NASA FIRMS y condiciones meteorológicas reales para el caso de estudio en la selva peruana (Madre de Dios / Ucayali).
+Autómata celular híbrido para la propagación de incendios forestales en Sudamérica. Actualmente evaluando la densidad de datos de NASA FIRMS y condiciones meteorológicas reales para el caso de estudio en la selva peruana (Madre de Dios).
 
 ## Estructura del proyecto
 

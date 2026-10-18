@@ -7,12 +7,12 @@
 
 Para la validación del **Autómata Celular Híbrido de Propagación de Incendios Forestales**, se ejecutó una evaluación multicriterio estandarizada y cuantitativa sobre los tres departamentos candidatos de la Amazonía peruana: **Madre de Dios**, **San Martín** y **Ucayali**. 
 
-La evaluación integró cuatro fuentes de datos con información satelital real de Google Earth Engine:
+La evaluación integró **cinco criterios ponderados**, construidos a partir de **cuatro fuentes de datos** (NASA FIRMS, ERA5 / Open-Meteo, Dynamic World y Copernicus DEM GLO-30; las dos últimas procesadas en Google Earth Engine). El quinto criterio (C5) es geométrico y se calcula sobre los focos FIRMS:
 1. **C1 (30%): NASA FIRMS** — Densidad, potencia radiativa (*FRP*), confiabilidad y continuidad espacial (*clustering*).
 2. **C2 (20%): Viento ERA5 / OpenWeather** — Disponibilidad horaria, velocidad y estabilidad direccional del vector de empuje.
 3. **C3 (20%): Vegetación Dynamic World** — Cobertura de biomasa combustible inflamable y continuidad espacial.
 4. **C4 (15%): DEM Copernicus GLO-30** — Gradiente de elevación y porcentaje de terreno con pendiente moderada ($3^\circ$–$12^\circ$).
-5. **C5 (15%): Grilla CA (50x50)** — Relación de aspecto e idoneidad para la grilla local del autómata celular.
+5. **C5 (15%): Grilla CA (50x50)** — Relación de aspecto de la envolvente de focos y su contención frente a una referencia de $5\text{ km}$.
 
 ### Tabla Comparativa de Puntuaciones Multicriterio
 
@@ -22,23 +22,44 @@ La matriz cuantitativa arrojó los siguientes resultados (escala normalizada de 
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | **C1: Focos NASA FIRMS** | **30%** | **8.63** *(2,974 focos)* | **8.69** *(1,124 focos)* | **8.62** *(1,433 focos)* | Densidad de detecciones, FRP medio/máx y clustering continuo |
 | **C2: Viento ERA5 / Reanálisis** | **20%** | **7.38** *(1.25 m/s, 100%)* | **8.54** *(1.55 m/s, 100%)* | **7.40** *(1.33 m/s, 100%)* | Serie horaria completa 72h-120h y vector direccional |
-| **C3: Vegetación Dynamic World** | **20%** | **7.32** *(63.45% combustible)* | **9.27** *(90.03% combustible)* | **9.27** *(90.46% combustible)* | Cobertura combustible real y continuidad espacial GEE |
+| **C3: Vegetación Dynamic World** | **20%** | **7.32** *(63.45% combustible)* | **9.27** *(90.03% combustible)* | **9.27** *(90.46% combustible)* | Cobertura combustible real y continuidad espacial GEE. |
 | **C4: Topografía Copernicus DEM** | **15%** | **3.13** *(Pendiente 2.17° ± 1.98°)* | **6.39** *(Pendiente 4.55° ± 3.42°)* | **4.15** *(Pendiente 10.70° ± 7.53°)* | Gradiente de elevación y pendiente moderada (3°–12°) |
-| **C5: Grilla CA (50x50)** | **15%** | **5.97** *(Aspecto 1.20)* | **6.24** *(Aspecto 1.03)* | **5.13** *(Aspecto 1.32)* | Contención del frente de fuego en sub-grilla local |
+| **C5: Grilla CA (50x50)** | **15%** | **5.97** *(Aspecto 1.20)* | **6.24** *(Aspecto 1.03)* | **5.13** *(Aspecto 1.32)* | Forma (relación de aspecto) y extensión de la envolvente de focos; no mide la extensión física de la grilla de 2.5 km |
 | **PUNTAJE FINAL PONDERADO** | **100%** | **6.89 / 10.0** | **8.06 / 10.0** | **7.31 / 10.0** | **Puntaje Global Multicriterio** |
 
 ---
 
-### Justificación Detallada de la Selección de Madre de Dios:
+### Justificación Detallada de la Selección de Madre de Dios
 
-1. **Mayor Continuidad y Biomasa Combustible Inflamable (C3: 9.27 / 10):**
-   - Dynamic World (Copernicus/Sentinel-2) registró **90.03% de biomasa combustible** con un índice de continuidad de **0.988**, superando ampliamente a Ucayali (63.45% combustible, 8.99% barrera de agua del río Ucayali y áreas antropizadas).
-2. **Topografía Óptima y Pendiente Moderada (C4: 6.39 / 10):**
-   - Copernicus DEM GLO-30 reveló una pendiente media de **4.55° ± 3.42°** en Madre de Dios, con un **59.91%** de celdas en el rango moderado óptimo ($3^\circ$ a $12^\circ$), permitiendo verificar la modulación orográfica en el autómata celular sin artefactos de sombra (a diferencia de San Martín, con $10.70^\circ \pm 7.53^\circ$ y pendientes abruptas de $>30^\circ$, o Ucayali con $2.17^\circ$ excesivamente plana).
-3. **Consistencia y Estabilidad Direccional del Viento (C2: 8.54 / 10):**
-   - Velocidad promedio de $1.55\text{ m/s}$ y una alta consistencia direccional resultante ($r = 0.603$), ofreciendo un vector de empuje claro para la propagación del fuego.
-4. **Relación de Aspecto Cuadrática Óptima en Grilla CA (C5: 6.24 / 10):**
-   - La envolvente geográfica de los focos en la zona focal presenta un aspect ratio casi perfecto de **1.03:1** ($25.71\text{ km} \times 24.96\text{ km}$), adaptándose perfectamente a grillas discretas 1:1.
+Detalle por criterio, de mayor a menor aporte:
+
+1. **Topografía (C4: 6.39 / 10, el mayor aporte):**
+   - Copernicus DEM GLO-30 reveló una pendiente media de **4.55° ± 3.42°** en Madre de Dios, con **59.91%** de celdas en el rango de pendiente moderada ($3^\circ$ a $12^\circ$) definido por el equipo. San Martín alcanza $35.0\%$ en ese rango, con una pendiente media de $10.70^\circ \pm 7.53^\circ$ y $42.8\%$ de celdas por encima de $12^\circ$. Ucayali alcanza $23.68\%$, con una pendiente media de $2.17^\circ$ y $76.1\%$ de celdas por debajo de $3^\circ$ (terreno muy plano).
+2. **Viento (C2: 8.54 / 10):**
+   - Velocidad promedio de $1.55\text{ m/s}$ y consistencia direccional resultante $r = 0.603$, la más alta de los tres candidatos (Ucayali $r = 0.256$, San Martín $r = 0.198$), lo que ofrece un vector de empuje más claro para la propagación del fuego.
+3. **Forma de la grilla (C5: 6.24 / 10):**
+   - La envolvente geográfica de los focos presenta una relación de aspecto de **1.03:1** ($25.71\text{ km} \times 24.96\text{ km}$), frente a $1.20$ en Ucayali y $1.32$ en San Martín. C5 mide la forma del área de focos; **no** mide la extensión de la sub-grilla del autómata ($2.5\text{ km} \times 2.5\text{ km}$), por lo que su ventaja es moderada ($+0.167$ sobre San Martín).
+4. **Vegetación (C3: 9.27 / 10, empate con San Martín):**
+   - Dynamic World (Copernicus/Sentinel-2) registró **90.03% de biomasa combustible** con un índice de continuidad de **0.988**. No distingue a Madre de Dios de San Martín. Sí supera ampliamente a Ucayali ($63.45\%$ combustible, $8.99\%$ de agua por el río Ucayali y áreas antropizadas), donde aporta $+0.390$ al margen.
+5. **Focos FIRMS (C1: 8.69 / 10, casi empate):**
+   - Los tres candidatos puntúan entre $8.62$ y $8.69$. Pese a ser el criterio de mayor peso (30%), no discrimina entre ellos y aporta menos de $0.03$ al margen.
+
+### Robustez de la selección (análisis de sensibilidad)
+
+Los umbrales de C4 (pendiente de 3° a 12°) y la forma de C5 son decisiones de diseño del equipo, no valores tomados de la literatura. Para comprobar que no determinan el resultado, se recalculó el puntaje final variándolos junto con los pesos. **Madre de Dios ganó en las 24 variaciones probadas y en el 100% de 20,000 conjuntos de pesos aleatorios.** El margen mínimo sobre el segundo lugar fue de 0.26 puntos.
+
+| Variación | Ucayali | Madre de Dios | San Martín | Margen |
+| :--- | :---: | :---: | :---: | :---: |
+| Base (3°–12°, pesos 30/20/20/15/15) | 6.89 | **8.06** | 7.31 | 0.75 |
+| Umbral de pendiente 5°–15° | 6.69 | **7.71** | 7.41 | 0.29 |
+| Umbral de pendiente 3°–20° | 6.90 | **8.11** | 7.73 | 0.38 |
+| C4 sin discriminar (0°–30°) | 7.92 | **8.61** | 8.18 | 0.42 |
+| C5 con valor neutro (5.0 para todos) | 6.75 | **7.88** | 7.29 | 0.59 |
+| Peor caso combinado (C4 0°–30° y C5 neutro) | 7.78 | **8.42** | 8.16 | 0.26 |
+| Pesos iguales (20% cada criterio) | 6.49 | **7.83** | 6.92 | 0.91 |
+| Sin C4 ni C5 (pesos 50/25/25) | 7.99 | **8.80** | 8.48 | 0.32 |
+
+El competidor relevante es San Martín: con umbrales de pendiente amplios su puntaje sube, pero no supera a Madre de Dios. Para reproducirla: `python scripts/sensibilidad_caso_estudio.py` (tabla completa de las 24 variaciones en su salida).
 
 ---
 
@@ -55,8 +76,8 @@ La matriz cuantitativa arrojó los siguientes resultados (escala normalizada de 
 | **Extensión Aproximada** | $\approx 25.71\text{ km} \times 24.96\text{ km}$ (área focal) |
 | **Rango de Fechas del Incendio** | **2024-08-14** a **2024-08-18** (Ventana histórica crítica de 120 horas continuas) |
 | **Sensor Satelital** | **VIIRS 375m** (Suomi-NPP Standard Processing Archive) vía NASA FIRMS |
-| **Archivo Local de Focos Crudos** | [`data/raw/firms/firms_caso_estudio_seleccionado.csv`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/data/raw/firms/firms_caso_estudio_seleccionado.csv) |
-| **Archivo Local de Viento Crudo** | [`data/raw/weather/weather_caso_estudio_seleccionado.json`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/data/raw/weather/weather_caso_estudio_seleccionado.json) |
+| **Archivo Local de Focos Crudos** | [`data/raw/firms/firms_caso_estudio_seleccionado.csv`](../data/raw/firms/firms_caso_estudio_seleccionado.csv) |
+| **Archivo Local de Viento Crudo** | [`data/raw/weather/weather_caso_estudio_seleccionado.json`](../data/raw/weather/weather_caso_estudio_seleccionado.json) |
 
 ### Listado Muestra de Detecciones e IDs de Focos de Calor FIRMS
 
@@ -109,7 +130,7 @@ Se extrajeron y aislaron **22 detecciones activas** dentro del área focal de es
   - Velocidad promedio del viento: `1.55 m/s` ($5.58\text{ km/h}$).
   - Velocidad máxima registrada: `2.94 m/s` ($10.58\text{ km/h}$).
   - Ráfagas máximas (*gusts*): `7.81 m/s`.
-  - Consistencia direccional del vector medio: $r = 0.603$ (alta estabilidad direccional).
+  - Consistencia direccional del vector medio: $r = 0.603$ (la más alta de los tres candidatos; Ucayali $r = 0.256$, San Martín $r = 0.198$).
 
 ### 3.3 Cobertura Vegetal Dynamic World
 - **Estado de Validación:** Verificado mediante Google Earth Engine (`notebooks/Datay3regiones.ipynb`) y matriz local `data/raw/vegetation/madre_de_dios_vegetacion_2024_50m.npy`.
@@ -162,11 +183,11 @@ Para transferir el caso de estudio real al espacio computacional discreto del mo
 
 Todos los datos y códigos requeridos para la reproducibilidad de este caso de estudio se encuentran integrados en el repositorio:
 
-- **Script evaluador:** [`scripts/evaluar_candidatos.py`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/scripts/evaluar_candidatos.py)
-- **Pruebas unitarias de integridad:** [`tests/test_case_study.py`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/tests/test_case_study.py)
-- **Resumen cuantitativo JSON:** [`data/processed/evaluacion_multicriterio_resumen.json`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/data/processed/evaluacion_multicriterio_resumen.json)
-- **Focos FIRMS del caso:** [`data/raw/firms/firms_caso_estudio_seleccionado.csv`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/data/raw/firms/firms_caso_estudio_seleccionado.csv) y `.json`
-- **Serie de Viento ERA5:** [`data/raw/weather/weather_caso_estudio_seleccionado.json`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/data/raw/weather/weather_caso_estudio_seleccionado.json)
-- **Metadatos Vegetación:** [`data/raw/vegetation/vegetacion_caso_estudio_metadata.json`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/data/raw/vegetation/vegetacion_caso_estudio_metadata.json)
-- **Metadatos DEM:** [`data/raw/dem/dem_caso_estudio_metadata.json`](file:///c:/Users/bryan/Desktop/UNMSM/CICLO%202026%20-%202/Modelos%20y%20Simulaci%C3%B3n/Proyecto/wildfire-cellular-automata/data/raw/dem/dem_caso_estudio_metadata.json)
+- **Script evaluador:** [`scripts/evaluar_candidatos.py`](../scripts/evaluar_candidatos.py)
+- **Pruebas unitarias de integridad:** [`tests/test_case_study.py`](../tests/test_case_study.py)
+- **Resumen cuantitativo JSON:** [`data/processed/evaluacion_multicriterio_resumen.json`](../data/processed/evaluacion_multicriterio_resumen.json)
+- **Focos FIRMS del caso:** [`data/raw/firms/firms_caso_estudio_seleccionado.csv`](../data/raw/firms/firms_caso_estudio_seleccionado.csv) y `.json`
+- **Serie de Viento ERA5:** [`data/raw/weather/weather_caso_estudio_seleccionado.json`](../data/raw/weather/weather_caso_estudio_seleccionado.json)
+- **Metadatos Vegetación:** [`data/raw/vegetation/vegetacion_caso_estudio_metadata.json`](../data/raw/vegetation/vegetacion_caso_estudio_metadata.json)
+- **Metadatos DEM:** [`data/raw/dem/dem_caso_estudio_metadata.json`](../data/raw/dem/dem_caso_estudio_metadata.json)
 - **Notebooks de procesamiento:** [`notebooks/Datay3regiones.ipynb`](../notebooks/Datay3regiones.ipynb), [`notebooks/Copernicus_GLO_30.ipynb`](../notebooks/Copernicus_GLO_30.ipynb) y [`notebooks/calibracion_caso_estudio.ipynb`](../notebooks/calibracion_caso_estudio.ipynb)
