@@ -95,3 +95,14 @@ python scripts/verificar_caso_estudio.py
 ### Notebooks Disponibles
 * [`notebooks/prueba_grid_sintetico.ipynb`](notebooks/prueba_grid_sintetico.ipynb): Validación visual del grid y quema en pasos de tiempo con datos sintéticos.
 * [`notebooks/calibracion_caso_estudio.ipynb`](notebooks/calibracion_caso_estudio.ipynb): Integración de series horarias de reanálisis ERA5 con la simulación dinámica del autómata celular.
+
+---
+
+## Regla de trabajo (Sprint 4 — 4 semanas)
+
+| Aspecto | Convención |
+|---------|------------|
+| **Ramas** | Nombrar siempre como `tipo/descripcion` (ej. `feat/contrato-salida`, `fix/borde-grilla`, `docs/regla-trabajo`). |
+| **Cambios a `main`** | Exclusivamente mediante **Pull Request**. No se permiten commits directos a `main`. |
+| **Revisión** | Todo PR debe ser **revisado y aprobado por al menos un miembro** del equipo antes de fusionarse. |
+| **Alcance** | Esta política aplica a **todo el repositorio**, incluyendo `src/`, `docs/`, `wiki/`, `notebooks/`, `scripts/` y cualquier otro directorio. |
