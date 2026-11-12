@@ -1,0 +1,28 @@
+{
+    "zona": "Madre de Dios",
+    "periodo": "2024-08-14/2024-08-18",
+    "crs": "EPSG:32719",
+    "shape": [
+        100,
+        100
+    ],
+    "tamano_celda_m": 100,
+    "bbox_utm_m": {
+        "xmin": 466358.65897083643,
+        "ymin": 8596518.030385423,
+        "xmax": 476358.65897083643,
+        "ymax": 8606518.030385423
+    },
+    "cantidad_focos": 6,
+    "fire_ids": [
+        "FIRMS-MDD-2024-0001",
+        "FIRMS-MDD-2024-0014",
+        "FIRMS-MDD-2024-0016",
+        "FIRMS-MDD-2024-0017",
+        "FIRMS-MDD-2024-0018",
+        "FIRMS-MDD-2024-0019"
+    ],
+    "resolucion_original_m": 50,
+    "fuente": "NASA FIRMS VIIRS_SNPP_SP",
+    "nota": "Las detecciones FIRMS son focos de calor, no un perimetro real de area quemada."
+}
