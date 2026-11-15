@@ -28,6 +28,7 @@ data/processed/*
 !data/raw/dem/dem_caso_estudio_metadata.*
 !data/raw/dem/pucallpa_dem_50x50.*
 !data/processed/evaluacion_multicriterio_resumen.json
+!data/processed/madre_de_dios_*
 
 .DS_Store
 Thumbs.db

@@ -1,0 +1,40 @@
+{
+  "zona": "Madre de Dios",
+  "periodo": "2024-08-14/2024-08-18",
+  "crs": "EPSG:32719",
+  "shape": [
+    100,
+    100
+  ],
+  "tamano_celda_m": 100.0,
+  "area_celda_ha": 1.0,
+  "bbox_utm_m": {
+    "xmin": 466358.65897083643,
+    "ymin": 8596518.030385423,
+    "xmax": 476358.65897083643,
+    "ymax": 8606518.030385423
+  },
+  "radio_huella_viirs_m": 187.5,
+  "focos_en_ventana": 6,
+  "fire_ids": [
+    "FIRMS-MDD-2024-0001",
+    "FIRMS-MDD-2024-0014",
+    "FIRMS-MDD-2024-0016",
+    "FIRMS-MDD-2024-0017",
+    "FIRMS-MDD-2024-0018",
+    "FIRMS-MDD-2024-0019"
+  ],
+  "focos_iniciales_t0": [
+    [
+      23,
+      81
+    ]
+  ],
+  "celdas_quemadas": 52,
+  "area_quemada_ha": 52.0,
+  "clases_excluidas": {
+    "0": "Agua"
+  },
+  "fuente_centroides": "data/processed/madre_de_dios_firms_100m.tif",
+  "nota_metodo": "docs/metodo_mascara_area_quemada.md"
+}
