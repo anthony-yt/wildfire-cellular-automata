@@ -7,8 +7,11 @@ from src.data.ground_truth import (
     agrupar_focos_por_distancia,
     calcular_resolucion_celda_m,
     cargar_focos_firms,
+    construir_mascara_desde_centroides,
     construir_mascara_observada,
     dilatar_huella_metrica,
+    generar_mascara_madre_de_dios,
+    leer_raster,
     proyectar_focos_a_grilla,
 )
 from src.data.weather_client import WeatherClient
@@ -21,7 +24,10 @@ __all__ = [
     "agrupar_focos_por_distancia",
     "calcular_resolucion_celda_m",
     "cargar_focos_firms",
+    "construir_mascara_desde_centroides",
     "construir_mascara_observada",
     "dilatar_huella_metrica",
+    "generar_mascara_madre_de_dios",
+    "leer_raster",
     "proyectar_focos_a_grilla",
 ]

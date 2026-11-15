@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import numpy as np
 import pytest
@@ -8,7 +9,9 @@ from src.data.ground_truth import (
     agrupar_focos_por_distancia,
     calcular_resolucion_celda_m,
     cargar_focos_firms,
+    construir_mascara_desde_centroides,
     construir_mascara_observada,
+    leer_raster,
     proyectar_focos_a_grilla,
 )
 
@@ -105,4 +108,64 @@ def test_construccion_mascara_observada_y_exclusion_de_agua():
     )
     assert not res_con_agua.mascara[f0, c0]
     assert res_con_agua.celdas_quemadas == res_sin_agua.celdas_quemadas - 1
+
+
+def test_grilla_focal_madre_de_dios_alineada_y_focos_dentro():
+    processed_dir = PROJECT_ROOT / "data" / "processed"
+    with open(processed_dir / "madre_de_dios_metadata.json", encoding="utf-8") as f:
+        meta = json.load(f)
+
+    shape = tuple(meta["shape"])
+    assert shape == (100, 100)
+    assert meta["tamano_celda_m"] == 100
+    assert meta["crs"] == "EPSG:32719"
+
+    bbox_utm = meta["bbox_utm_m"]
+    assert bbox_utm["xmax"] - bbox_utm["xmin"] == pytest.approx(shape[1] * meta["tamano_celda_m"])
+    assert bbox_utm["ymax"] - bbox_utm["ymin"] == pytest.approx(shape[0] * meta["tamano_celda_m"])
+
+    dem = leer_raster(processed_dir / "madre_de_dios_dem_100m.tif")
+    pendiente = leer_raster(processed_dir / "madre_de_dios_pendiente_100m.tif")
+    veg = leer_raster(processed_dir / "madre_de_dios_vegetacion_100m.tif")
+    firms_tif = leer_raster(processed_dir / "madre_de_dios_firms_100m.tif")
+
+    assert dem.shape == shape
+    assert pendiente.shape == shape
+    assert veg.shape == shape
+    assert firms_tif.shape == shape
+
+    focos = cargar_focos_firms(processed_dir / "madre_de_dios_firms_100m.csv")
+    assert len(focos) == meta["cantidad_focos"] == 6
+    for reg in focos:
+        fila, col = int(reg["grid_row"]), int(reg["grid_col"])
+        assert 0 <= fila < shape[0]
+        assert 0 <= col < shape[1]
+        assert firms_tif[fila, col] == 1
+
+
+def test_mascara_observada_oficial_madre_de_dios():
+    processed_dir = PROJECT_ROOT / "data" / "processed"
+    mascara_guardada = np.load(processed_dir / "madre_de_dios_mascara_observada_100m.npy")
+    with open(processed_dir / "madre_de_dios_mascara_observada_metadata.json", encoding="utf-8") as f:
+        meta_obs = json.load(f)
+
+    veg = leer_raster(processed_dir / "madre_de_dios_vegetacion_100m.tif")
+    firms_tif = leer_raster(processed_dir / "madre_de_dios_firms_100m.tif")
+    focos = cargar_focos_firms(processed_dir / "madre_de_dios_firms_100m.csv")
+
+    res = construir_mascara_desde_centroides(
+        mascara_centroides=(firms_tif > 0),
+        tamano_celda_m=100.0,
+        focos=focos,
+        mascara_agua=(veg == 0),
+    )
+
+    assert mascara_guardada.dtype == bool
+    assert mascara_guardada.shape == (100, 100)
+    np.testing.assert_array_equal(mascara_guardada, res.mascara)
+    assert res.celdas_quemadas == meta_obs["celdas_quemadas"] == 52
+    assert res.area_quemada_ha == pytest.approx(meta_obs["area_quemada_ha"])
+    assert res.area_quemada_ha == pytest.approx(52.0)
+    assert res.focos_iniciales_t0 == ((23, 81),)
+    assert not np.any(mascara_guardada & (veg == 0))
 

@@ -257,6 +257,148 @@ def construir_mascara_observada(
     )
 
 
+def leer_raster(ruta: str | Path) -> np.ndarray:
+    """Lee una matriz raster 2D desde GeoTIFF (.tif) o arreglo NumPy (.npy)."""
+    path = Path(ruta)
+    if path.suffix.lower() == ".npy":
+        return np.load(path)
+    try:
+        import rasterio  # type: ignore
+
+        with rasterio.open(path) as src:
+            return src.read(1)
+    except ImportError:
+        from PIL import Image
+
+        with Image.open(path) as img:
+            return np.array(img)
+
+
+def _resolver_focos_t0_utm(
+    focos: Sequence[Mapping[str, Any]],
+    shape: Tuple[int, int],
+    fecha_ignicion_t0: Optional[str] = None,
+) -> Tuple[Tuple[int, int], ...]:
+    filas, columnas = shape
+    fechas = sorted({str(reg.get("acq_date", "")) for reg in focos if reg.get("acq_date")})
+    fecha_t0 = fecha_ignicion_t0 or (fechas[0] if fechas else "")
+
+    coords: List[Tuple[int, int]] = []
+    for reg in focos:
+        fila = int(reg["grid_row"])
+        col = int(reg["grid_col"])
+        if not (0 <= fila < filas and 0 <= col < columnas):
+            raise ValueError(f"Foco {reg.get('fire_id', '')} fuera de grilla: ({fila}, {col})")
+        if not fecha_t0 or str(reg.get("acq_date", "")) == fecha_t0:
+            if (fila, col) not in coords:
+                coords.append((fila, col))
+    return tuple(coords)
+
+
+def construir_mascara_desde_centroides(
+    mascara_centroides: np.ndarray,
+    tamano_celda_m: float,
+    focos: Optional[Sequence[Mapping[str, Any]]] = None,
+    radio_huella_m: float = RADIO_VIIRS_M,
+    mascara_agua: Optional[np.ndarray] = None,
+    fecha_ignicion_t0: Optional[str] = None,
+) -> ResultadoMascaraObservada:
+    """Construye la máscara observada dilatando centroides ya rasterizados sobre grilla métrica."""
+    centroides = np.asarray(mascara_centroides, dtype=bool)
+    if centroides.ndim != 2:
+        raise ValueError(f"mascara_centroides debe ser 2D, llegó shape={centroides.shape}")
+    if tamano_celda_m <= 0:
+        raise ValueError("tamano_celda_m debe ser positivo")
+
+    shape = centroides.shape
+    dx_m = float(tamano_celda_m)
+    dy_m = float(tamano_celda_m)
+    area_celda_ha = (dx_m * dy_m) / 10_000.0
+
+    if focos is not None:
+        focos_t0 = _resolver_focos_t0_utm(focos, shape=shape, fecha_ignicion_t0=fecha_ignicion_t0)
+        n_focos = len(focos)
+    else:
+        focos_t0 = tuple((int(r), int(c)) for r, c in np.argwhere(centroides))
+        n_focos = int(np.count_nonzero(centroides))
+
+    mascara = dilatar_huella_metrica(centroides, dx_m=dx_m, dy_m=dy_m, radio_huella_m=radio_huella_m)
+    if mascara_agua is not None:
+        agua = np.asarray(mascara_agua, dtype=bool)
+        if agua.shape != shape:
+            raise ValueError(f"mascara_agua {agua.shape} no coincide con shape {shape}")
+        mascara &= ~agua
+
+    celdas_quemadas = int(np.count_nonzero(mascara))
+    return ResultadoMascaraObservada(
+        mascara=mascara,
+        mascara_centroides=centroides,
+        focos_iniciales_t0=focos_t0,
+        focos_en_ventana=n_focos,
+        focos_descartados=0,
+        celdas_quemadas=celdas_quemadas,
+        tamano_celda_x_m=dx_m,
+        tamano_celda_y_m=dy_m,
+        area_celda_ha=area_celda_ha,
+        area_quemada_ha=float(celdas_quemadas * area_celda_ha),
+    )
+
+
+def generar_mascara_madre_de_dios(
+    processed_dir: str | Path | None = None,
+    radio_huella_m: float = RADIO_VIIRS_M,
+) -> Tuple[Path, Path, ResultadoMascaraObservada]:
+    """Genera y persiste la máscara observada oficial de Madre de Dios sobre la grilla focal 100x100."""
+    base_dir = Path(processed_dir) if processed_dir is not None else Path(__file__).resolve().parents[2] / "data" / "processed"
+    with open(base_dir / "madre_de_dios_metadata.json", encoding="utf-8") as f:
+        meta = json.load(f)
+
+    shape = tuple(int(v) for v in meta["shape"])
+    tamano_celda_m = float(meta["tamano_celda_m"])
+
+    centroides = leer_raster(base_dir / "madre_de_dios_firms_100m.tif") > 0
+    veg = leer_raster(base_dir / "madre_de_dios_vegetacion_100m.tif")
+    focos = cargar_focos_firms(base_dir / "madre_de_dios_firms_100m.csv")
+
+    if centroides.shape != shape or veg.shape != shape:
+        raise ValueError(f"Dimensiones inconsistentes: centroides={centroides.shape}, veg={veg.shape}, esperado={shape}")
+
+    resultado = construir_mascara_desde_centroides(
+        mascara_centroides=centroides,
+        tamano_celda_m=tamano_celda_m,
+        focos=focos,
+        radio_huella_m=radio_huella_m,
+        mascara_agua=(veg == 0),
+    )
+
+    ruta_npy = base_dir / "madre_de_dios_mascara_observada_100m.npy"
+    ruta_meta = base_dir / "madre_de_dios_mascara_observada_metadata.json"
+    np.save(ruta_npy, resultado.mascara)
+
+    resumen_meta = {
+        "zona": meta["zona"],
+        "periodo": meta["periodo"],
+        "crs": meta["crs"],
+        "shape": list(shape),
+        "tamano_celda_m": tamano_celda_m,
+        "area_celda_ha": resultado.area_celda_ha,
+        "bbox_utm_m": meta["bbox_utm_m"],
+        "radio_huella_viirs_m": float(radio_huella_m),
+        "focos_en_ventana": resultado.focos_en_ventana,
+        "fire_ids": meta["fire_ids"],
+        "focos_iniciales_t0": [list(pt) for pt in resultado.focos_iniciales_t0],
+        "celdas_quemadas": resultado.celdas_quemadas,
+        "area_quemada_ha": resultado.area_quemada_ha,
+        "clases_excluidas": {"0": "Agua"},
+        "fuente_centroides": "data/processed/madre_de_dios_firms_100m.tif",
+        "nota_metodo": "docs/metodo_mascara_area_quemada.md",
+    }
+    with open(ruta_meta, "w", encoding="utf-8") as f:
+        json.dump(resumen_meta, f, indent=2, ensure_ascii=False)
+
+    return ruta_npy, ruta_meta, resultado
+
+
 def cargar_focos_firms(ruta: str | Path) -> List[Dict[str, Any]]:
     """Carga registros de focos FIRMS desde un archivo CSV o JSON local."""
     path = Path(ruta)
