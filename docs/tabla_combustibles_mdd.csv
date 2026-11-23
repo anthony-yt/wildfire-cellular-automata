@@ -1,0 +1,12 @@
+clase_dw,cobertura,condicion,codigo_prop,categoria_prop,factor_base,criterio
+0,Agua,todas,0,Sin combustible,0,Cuerpo de agua
+1,Árboles,todas,1,Latifoliadas,0.631578947368421,Aproximación local para bosque de hoja ancha
+2,Pasto,todas,4,Pastizal,1,Cobertura herbácea
+3,Vegetación inundada,todas,0,Sin combustible,0,Barrera provisional por inundación
+4,Cultivos,todas,6,Agroforestal,0.7368421052631579,Aproximación para el mosaico agrícola
+5,Matorral,todas,2,Matorral,0.7894736842105263,Cobertura arbustiva
+6,Construido,borde,6,Agroforestal,0.7368421052631579,Píxel mixto supuesto en el borde
+6,Construido,interior,3,No vegetado,0,Interior construido como barrera
+7,Suelo desnudo,todas,3,No vegetado,0,Sin cobertura vegetal
+8,Nieve y hielo,todas,0,Sin combustible,0,Barrera
+255,Sin dato,todas,0,Sin combustible,0,Excluido del dominio válido
