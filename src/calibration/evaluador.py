@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, FrozenSet, Mapping, Optional, Sequence, Tuple, Union
 import numpy as np
 
 from src.model.grid import (
@@ -39,6 +39,11 @@ NOMBRES_PARAMETROS_PROPAGATOR: Tuple[str, ...] = (
     "humedad",
     "escala_p_nominal",
 )
+
+PARAMETROS_POR_MODO: Dict[str, FrozenSet[str]] = {
+    "base": frozenset(NOMBRES_PARAMETROS_BASE) | {"pasos_para_quemarse"},
+    "propagator": frozenset(NOMBRES_PARAMETROS_PROPAGATOR) | {"pasos_para_quemarse"},
+}
 
 SEMILLAS_POR_DEFECTO: Tuple[int, ...] = (42, 101, 2024, 7, 99)
 
@@ -146,16 +151,31 @@ def normalizar_parametros(
         "escala_p_nominal": 1.0,
     }
 
+    if modo not in PARAMETROS_POR_MODO:
+        raise ValueError(f"modo inválido '{modo}'. Use 'base' o 'propagator'")
+    claves_permitidas = PARAMETROS_POR_MODO[modo]
+
+    def validar_clave(k: str) -> None:
+        if k not in base_defaults:
+            raise KeyError(f"Parámetro desconocido: '{k}'")
+        if k not in claves_permitidas:
+            raise ValueError(
+                f"Parámetro '{k}' no aplica para el modo '{modo}'. Permitidos: {sorted(claves_permitidas)}"
+            )
+
     if isinstance(parametros, Mapping):
         for k, v in parametros.items():
-            if k not in base_defaults:
-                raise KeyError(f"Parámetro desconocido: '{k}'")
+            validar_clave(k)
             base_defaults[k] = float(v)
     elif isinstance(parametros, (Sequence, np.ndarray)):
         valores = [float(x) for x in parametros]
-        claves = tuple(nombres) if nombres is not None else (
-            NOMBRES_PARAMETROS_PROPAGATOR if modo == "propagator" else NOMBRES_PARAMETROS_BASE
+        claves = (
+            tuple(nombres)
+            if nombres is not None
+            else (NOMBRES_PARAMETROS_PROPAGATOR if modo == "propagator" else NOMBRES_PARAMETROS_BASE)
         )
+        for k in claves:
+            validar_clave(k)
         if len(valores) > len(claves):
             raise ValueError(f"Se recibieron {len(valores)} valores para {len(claves)} parámetros ({claves})")
         for k, val in zip(claves, valores):

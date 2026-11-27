@@ -97,7 +97,7 @@ def test_validacion_de_entradas_y_parametros():
     with pytest.raises(ValueError):
         normalizar_parametros({"prob_ignicion_base": 1.5})
     with pytest.raises(ValueError):
-        normalizar_parametros({"humedad": -0.1})
+        normalizar_parametros({"humedad": -0.1}, modo="propagator")
     with pytest.raises(ValueError):
         EscenarioCalibracion(
             mascara_observada=np.zeros((10, 12), dtype=bool),
@@ -117,4 +117,42 @@ def test_respeto_de_barrera_de_agua_en_evaluacion():
     detalle = evaluar_detallado({"prob_ignicion_base": 0.95}, escenario=escenario)
     mapa_prob = detalle["mapa_probabilidad"]
     assert np.all(mapa_prob[escenario.mascara_agua] == 0.0)
+
+
+@pytest.mark.parametrize(
+    ("parametros", "modo"),
+    [
+        ({"humedad": 0.1}, "base"),
+        ({"escala_p_nominal": 0.8}, "base"),
+        ({"prob_ignicion_base": 0.2}, "propagator"),
+        ({"c1": 0.05}, "propagator"),
+        ({"c2": 0.15}, "propagator"),
+        ({"as_slope": 0.08}, "propagator"),
+    ],
+)
+def test_rechazo_de_parametros_ajenos_al_modo(parametros, modo):
+    with pytest.raises(ValueError):
+        normalizar_parametros(parametros, modo=modo)
+
+
+def test_rechazo_en_secuencia_modo_invalido_y_alias_no_soportado():
+    with pytest.raises(ValueError):
+        normalizar_parametros([0.1], modo="base", nombres=("humedad",))
+    with pytest.raises(ValueError):
+        normalizar_parametros({}, modo="invalido")
+    with pytest.raises(KeyError):
+        normalizar_parametros({"prob_base": 0.2}, modo="base")
+
+    assert normalizar_parametros({"pasos_para_quemarse": 3}, modo="base")["pasos_para_quemarse"] == 3.0
+    assert normalizar_parametros({"pasos_para_quemarse": 3}, modo="propagator")["pasos_para_quemarse"] == 3.0
+    assert normalizar_parametros({}, modo="base")["prob_ignicion_base"] == pytest.approx(0.30)
+    assert normalizar_parametros({}, modo="propagator")["humedad"] == pytest.approx(0.05)
+
+    esc_base = escenario_sintetico_base(tamano=15, pasos=4, modo="base")
+    esc_prop = escenario_sintetico_base(tamano=15, pasos=4, modo="propagator")
+    with pytest.raises(ValueError):
+        evaluar({"humedad": 0.1}, escenario=esc_base)
+    with pytest.raises(ValueError):
+        evaluar({"prob_ignicion_base": 0.2}, escenario=esc_prop)
+
 
